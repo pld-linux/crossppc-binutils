@@ -14,7 +14,7 @@ diff -uNr binutils-2.15.94.0.2.2.orig/bfd/elf-bfd.h binutils-2.15.94.0.2.2/bfd/e
 diff -uNr binutils-2.15.94.0.2.2.orig/bfd/elf.c binutils-2.15.94.0.2.2/bfd/elf.c
 --- binutils-2.15.94.0.2.2.orig/bfd/elf.c	2005-02-07 20:42:44.000000000 +0100
 +++ binutils-2.15.94.0.2.2/bfd/elf.c	2005-02-20 13:13:17.397552880 +0100
-@@ -1051,6 +1051,7 @@
+@@ -1028,6 +1028,7 @@
  	    case PT_GNU_EH_FRAME: pt = "EH_FRAME"; break;
  	    case PT_GNU_STACK: pt = "STACK"; break;
  	    case PT_GNU_RELRO: pt = "RELRO"; break;
@@ -22,7 +22,7 @@ diff -uNr binutils-2.15.94.0.2.2.orig/bfd/elf.c binutils-2.15.94.0.2.2/bfd/elf.c
  	    default: sprintf (buf, "0x%lx", p->p_type); pt = buf; break;
  	    }
  	  fprintf (f, "%8s off    0x", pt);
-@@ -2400,6 +2401,9 @@
+@@ -2376,6 +2377,9 @@
      case PT_GNU_RELRO:
        return _bfd_elf_make_section_from_phdr (abfd, hdr, index, "relro");
  
@@ -30,9 +30,9 @@ diff -uNr binutils-2.15.94.0.2.2.orig/bfd/elf.c binutils-2.15.94.0.2.2/bfd/elf.c
 +      return _bfd_elf_make_section_from_phdr (abfd, hdr, index, "pax_flags");
 +
      default:
-       /* Check for any processor-specific program segment types.
-          If no handler for them, default to making "segment" sections.  */
-@@ -3748,6 +3752,20 @@
+       /* Check for any processor-specific program segment types.  */
+       bed = get_elf_backend_data (abfd);
+@@ -3720,6 +3724,20 @@
        pm = &m->next;
      }
  
@@ -53,7 +53,7 @@ diff -uNr binutils-2.15.94.0.2.2.orig/bfd/elf.c binutils-2.15.94.0.2.2/bfd/elf.c
    free (sections);
    sections = NULL;
  
-@@ -4446,6 +4464,11 @@
+@@ -4424,6 +4442,11 @@
        ++segs;
      }
  
@@ -65,17 +65,17 @@ diff -uNr binutils-2.15.94.0.2.2.orig/bfd/elf.c binutils-2.15.94.0.2.2/bfd/elf.c
    for (s = abfd->sections; s != NULL; s = s->next)
      {
        if ((s->flags & SEC_LOAD) != 0
-@@ -4989,7 +5012,8 @@
-        4. The section has not already been allocated to a previous segment.
+@@ -4958,7 +4981,8 @@
         5. PT_GNU_STACK segments do not include any sections.
         6. PT_TLS segment includes only SHF_TLS sections.
--       7. SHF_TLS sections are only in PT_TLS or PT_LOAD segments.  */
-+       7. SHF_TLS sections are only in PT_TLS or PT_LOAD segments.
-+       8. PT_PAX_FLAGS segments do not include any sections.  */
+        7. SHF_TLS sections are only in PT_TLS or PT_LOAD segments.
+-       8. PT_DYNAMIC should not contain empty sections at the beginning
++       8. PT_PAX_FLAGS segments do not include any sections.
++       9. PT_DYNAMIC should not contain empty sections at the beginning
+           (with the possible exception of .dynamic).  */
  #define INCLUDE_SECTION_IN_SEGMENT(section, segment, bed)		\
    ((((segment->p_paddr							\
-       ? IS_CONTAINED_BY_LMA (section, segment, segment->p_paddr)	\
-@@ -4998,6 +5022,7 @@
+@@ -4968,6 +4992,7 @@
      || IS_COREFILE_NOTE (segment, section))				\
     && section->output_section != NULL					\
     && segment->p_type != PT_GNU_STACK					\
