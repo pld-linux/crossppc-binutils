@@ -1,9 +1,9 @@
-diff -uNr binutils-2.15.90.0.1.1.orig/bfd/elf-bfd.h binutils-2.15.90.0.1.1/bfd/elf-bfd.h
---- binutils-2.15.90.0.1.1.orig/bfd/elf-bfd.h	2004-03-03 21:24:33.000000000 +0100
-+++ binutils-2.15.90.0.1.1/bfd/elf-bfd.h	2004-03-17 11:51:20.951912544 +0100
-@@ -1225,6 +1225,9 @@
-   /* Segment flags for the PT_GNU_STACK segment.  */
-   unsigned int stack_flags;  
+diff -uNr binutils-2.15.94.0.2.2.orig/bfd/elf-bfd.h binutils-2.15.94.0.2.2/bfd/elf-bfd.h
+--- binutils-2.15.94.0.2.2.orig/bfd/elf-bfd.h	2005-02-07 20:42:44.000000000 +0100
++++ binutils-2.15.94.0.2.2/bfd/elf-bfd.h	2005-02-20 13:13:17.362558200 +0100
+@@ -1266,6 +1266,9 @@
+   /* Should the PT_GNU_RELRO segment be emitted?  */
+   bfd_boolean relro;
  
 +  /* Segment flags for the PT_PAX_FLAGS segment.  */
 +  unsigned int pax_flags;
@@ -11,9 +11,10 @@ diff -uNr binutils-2.15.90.0.1.1.orig/bfd/elf-bfd.h binutils-2.15.90.0.1.1/bfd/e
    /* Symbol version definitions in external objects.  */
    Elf_Internal_Verdef *verdef;
  
---- binutils-2.15.91.0.1/bfd/elf.c.orig	2004-05-27 20:26:02.000000000 +0200
-+++ binutils-2.15.91.0.1/bfd/elf.c	2004-05-30 02:32:15.280667440 +0200
-@@ -996,6 +996,7 @@
+diff -uNr binutils-2.15.94.0.2.2.orig/bfd/elf.c binutils-2.15.94.0.2.2/bfd/elf.c
+--- binutils-2.15.94.0.2.2.orig/bfd/elf.c	2005-02-07 20:42:44.000000000 +0100
++++ binutils-2.15.94.0.2.2/bfd/elf.c	2005-02-20 13:13:17.397552880 +0100
+@@ -1051,6 +1051,7 @@
  	    case PT_GNU_EH_FRAME: pt = "EH_FRAME"; break;
  	    case PT_GNU_STACK: pt = "STACK"; break;
  	    case PT_GNU_RELRO: pt = "RELRO"; break;
@@ -21,7 +22,7 @@ diff -uNr binutils-2.15.90.0.1.1.orig/bfd/elf-bfd.h binutils-2.15.90.0.1.1/bfd/e
  	    default: sprintf (buf, "0x%lx", p->p_type); pt = buf; break;
  	    }
  	  fprintf (f, "%8s off    0x", pt);
-@@ -2325,6 +2326,9 @@
+@@ -2400,6 +2401,9 @@
      case PT_GNU_RELRO:
        return _bfd_elf_make_section_from_phdr (abfd, hdr, index, "relro");
  
@@ -31,7 +32,7 @@ diff -uNr binutils-2.15.90.0.1.1.orig/bfd/elf-bfd.h binutils-2.15.90.0.1.1/bfd/e
      default:
        /* Check for any processor-specific program segment types.
           If no handler for them, default to making "segment" sections.  */
-@@ -3587,6 +3591,20 @@
+@@ -3748,6 +3752,20 @@
        pm = &m->next;
      }
  
@@ -52,7 +53,7 @@ diff -uNr binutils-2.15.90.0.1.1.orig/bfd/elf-bfd.h binutils-2.15.90.0.1.1/bfd/e
    free (sections);
    sections = NULL;
  
-@@ -4245,6 +4263,11 @@
+@@ -4446,6 +4464,11 @@
        ++segs;
      }
  
@@ -64,7 +65,17 @@ diff -uNr binutils-2.15.90.0.1.1.orig/bfd/elf-bfd.h binutils-2.15.90.0.1.1/bfd/e
    for (s = abfd->sections; s != NULL; s = s->next)
      {
        if ((s->flags & SEC_LOAD) != 0
-@@ -4794,6 +4817,7 @@
+@@ -4989,7 +5012,8 @@
+        4. The section has not already been allocated to a previous segment.
+        5. PT_GNU_STACK segments do not include any sections.
+        6. PT_TLS segment includes only SHF_TLS sections.
+-       7. SHF_TLS sections are only in PT_TLS or PT_LOAD segments.  */
++       7. SHF_TLS sections are only in PT_TLS or PT_LOAD segments.
++       8. PT_PAX_FLAGS segments do not include any sections.  */
+ #define INCLUDE_SECTION_IN_SEGMENT(section, segment, bed)		\
+   ((((segment->p_paddr							\
+       ? IS_CONTAINED_BY_LMA (section, segment, segment->p_paddr)	\
+@@ -4998,6 +5022,7 @@
      || IS_COREFILE_NOTE (segment, section))				\
     && section->output_section != NULL					\
     && segment->p_type != PT_GNU_STACK					\
@@ -72,12 +83,13 @@ diff -uNr binutils-2.15.90.0.1.1.orig/bfd/elf-bfd.h binutils-2.15.90.0.1.1/bfd/e
     && (segment->p_type != PT_TLS					\
         || (section->flags & SEC_THREAD_LOCAL))				\
     && (segment->p_type == PT_LOAD					\
---- binutils-2.15.91.0.1/bfd/elflink.c.orig	2004-05-27 20:26:02.000000000 +0200
-+++ binutils-2.15.91.0.1/bfd/elflink.c	2004-05-30 02:34:22.532322248 +0200
-@@ -4628,16 +4628,30 @@
+diff -uNr binutils-2.15.94.0.2.2.orig/bfd/elflink.c binutils-2.15.94.0.2.2/bfd/elflink.c
+--- binutils-2.15.94.0.2.2.orig/bfd/elflink.c	2005-02-07 20:42:44.000000000 +0100
++++ binutils-2.15.94.0.2.2/bfd/elflink.c	2005-02-20 13:13:17.432547560 +0100
+@@ -4757,17 +4757,31 @@
+   if (!is_elf_hash_table (info->hash))
      return TRUE;
  
-   elf_tdata (output_bfd)->relro = info->relro;
 +  elf_tdata (output_bfd)->pax_flags = PF_NORANDEXEC;
 +
 +  if (info->execheap)
@@ -85,16 +97,19 @@ diff -uNr binutils-2.15.90.0.1.1.orig/bfd/elf-bfd.h binutils-2.15.90.0.1.1/bfd/e
 +  else if (info->noexecheap)
 +    elf_tdata (output_bfd)->pax_flags |= PF_MPROTECT;
 +
+   elf_tdata (output_bfd)->relro = info->relro;
    if (info->execstack)
-+  {
-     elf_tdata (output_bfd)->stack_flags = PF_R | PF_W | PF_X;
-+    elf_tdata (output_bfd)->pax_flags |= PF_EMUTRAMP;
-+  }
+-    elf_tdata (output_bfd)->stack_flags = PF_R | PF_W | PF_X;
++    {
++      elf_tdata (output_bfd)->stack_flags = PF_R | PF_W | PF_X;
++      elf_tdata (output_bfd)->pax_flags |= PF_EMUTRAMP;
++    }
    else if (info->noexecstack)
-+  {
-     elf_tdata (output_bfd)->stack_flags = PF_R | PF_W;
-+    elf_tdata (output_bfd)->pax_flags |= PF_NOEMUTRAMP;
-+  }
+-    elf_tdata (output_bfd)->stack_flags = PF_R | PF_W;
++    {
++      elf_tdata (output_bfd)->stack_flags = PF_R | PF_W;
++      elf_tdata (output_bfd)->pax_flags |= PF_NOEMUTRAMP;
++    }
    else
      {
        bfd *inputobj;
@@ -105,7 +120,7 @@ diff -uNr binutils-2.15.90.0.1.1.orig/bfd/elf-bfd.h binutils-2.15.90.0.1.1/bfd/e
        for (inputobj = info->input_bfds;
  	   inputobj;
  	   inputobj = inputobj->link_next)
-@@ -4650,7 +4664,11 @@
+@@ -4780,7 +4794,11 @@
  	  if (s)
  	    {
  	      if (s->flags & SEC_CODE)
@@ -118,20 +133,21 @@ diff -uNr binutils-2.15.90.0.1.1.orig/bfd/elf-bfd.h binutils-2.15.90.0.1.1/bfd/e
  	      notesec = s;
  	    }
  	  else
---- binutils-2.15.91.0.1/binutils/readelf.c.orig	2004-05-27 20:26:02.000000000 +0200
-+++ binutils-2.15.91.0.1/binutils/readelf.c	2004-05-30 02:34:52.746728960 +0200
-@@ -2190,6 +2190,7 @@
+diff -uNr binutils-2.15.94.0.2.2.orig/binutils/readelf.c binutils-2.15.94.0.2.2/binutils/readelf.c
+--- binutils-2.15.94.0.2.2.orig/binutils/readelf.c	2005-02-18 07:14:30.000000000 +0100
++++ binutils-2.15.94.0.2.2/binutils/readelf.c	2005-02-20 13:13:17.470541784 +0100
+@@ -2293,6 +2293,7 @@
  			return "GNU_EH_FRAME";
-     case PT_GNU_STACK:	return "STACK";
+     case PT_GNU_STACK:	return "GNU_STACK";
      case PT_GNU_RELRO:  return "GNU_RELRO";
 +    case PT_PAX_FLAGS:	return "PAX_FLAGS";
  
      default:
        if ((p_type >= PT_LOPROC) && (p_type <= PT_HIPROC))
-diff -uNr binutils-2.15.90.0.1.1.orig/include/bfdlink.h binutils-2.15.90.0.1.1/include/bfdlink.h
---- binutils-2.15.90.0.1.1.orig/include/bfdlink.h	2004-01-14 22:07:51.000000000 +0100
-+++ binutils-2.15.90.0.1.1/include/bfdlink.h	2004-03-17 11:51:21.109888528 +0100
-@@ -302,6 +302,14 @@
+diff -uNr binutils-2.15.94.0.2.2.orig/include/bfdlink.h binutils-2.15.94.0.2.2/include/bfdlink.h
+--- binutils-2.15.94.0.2.2.orig/include/bfdlink.h	2004-11-22 21:33:32.000000000 +0100
++++ binutils-2.15.94.0.2.2/include/bfdlink.h	2005-02-20 13:13:17.476540872 +0100
+@@ -313,6 +313,14 @@
       flags.  */
    unsigned int noexecstack: 1;
  
@@ -143,16 +159,17 @@ diff -uNr binutils-2.15.90.0.1.1.orig/include/bfdlink.h binutils-2.15.90.0.1.1/i
 +     flags.  */
 +  unsigned int noexecheap: 1;
 +
-   /* What to do with unresolved symbols in an object file.
-      When producing static binaries the default is GENERATE_ERROR.
-      When producing dynamic binaries the default is IGNORE.  The
---- binutils-2.15.91.0.1/include/elf/common.h.orig	2004-05-27 20:26:04.000000000 +0200
-+++ binutils-2.15.91.0.1/include/elf/common.h	2004-05-30 02:36:25.633608008 +0200
-@@ -291,12 +291,27 @@
- #define PT_GNU_EH_FRAME	(PT_LOOS + 0x474e550) /* Frame unwind information */
+   /* TRUE if PT_GNU_RELRO segment should be created.  */
+   unsigned int relro: 1;
+ 
+diff -uNr binutils-2.15.94.0.2.2.orig/include/elf/common.h binutils-2.15.94.0.2.2/include/elf/common.h
+--- binutils-2.15.94.0.2.2.orig/include/elf/common.h	2004-11-22 21:33:32.000000000 +0100
++++ binutils-2.15.94.0.2.2/include/elf/common.h	2005-02-20 13:13:17.482539960 +0100
+@@ -293,12 +293,27 @@
+ #define PT_SUNW_EH_FRAME PT_GNU_EH_FRAME      /* Solaris uses the same value */
  #define PT_GNU_STACK	(PT_LOOS + 0x474e551) /* Stack flags */
  #define PT_GNU_RELRO	(PT_LOOS + 0x474e552) /* Read-only after relocation */
-+#define PT_PAX_FLAGS	(PT_LOOS + 0x5041580)
++#define PT_PAX_FLAGS	(PT_LOOS + 0x5041580) /* PaX flags */
  
  /* Program segment permissions, in program header p_flags field.  */
  
@@ -176,13 +193,14 @@ diff -uNr binutils-2.15.90.0.1.1.orig/include/bfdlink.h binutils-2.15.90.0.1.1/i
  /* #define PF_MASKOS	0x0F000000    *//* OS-specific reserved bits */
  #define PF_MASKOS	0x0FF00000	/* New value, Oct 4, 1999 Draft */
  #define PF_MASKPROC	0xF0000000	/* Processor-specific reserved bits */
---- binutils-2.15.91.0.1/ld/emultempl/elf32.em.orig	2004-05-27 20:26:05.000000000 +0200
-+++ binutils-2.15.91.0.1/ld/emultempl/elf32.em	2004-05-30 02:37:57.317669912 +0200
-@@ -1694,6 +1694,16 @@
- 	link_info.relro = TRUE;
-       else if (strcmp (optarg, "norelro") == 0)
- 	link_info.relro = FALSE;
-+      else if (strcmp (optarg, "execheap") == 0)
+diff -uNr binutils-2.15.94.0.2.2.orig/ld/emultempl/elf32.em binutils-2.15.94.0.2.2/ld/emultempl/elf32.em
+--- binutils-2.15.94.0.2.2.orig/ld/emultempl/elf32.em	2004-11-22 21:33:33.000000000 +0100
++++ binutils-2.15.94.0.2.2/ld/emultempl/elf32.em	2005-02-20 13:13:17.492538440 +0100
+@@ -1689,6 +1689,16 @@
+ 	  link_info.noexecstack = TRUE;
+ 	  link_info.execstack = FALSE;
+ 	}
++       else if (strcmp (optarg, "execheap") == 0)
 +	{
 +	  link_info.execheap = TRUE;
 +	  link_info.noexecheap = FALSE;
@@ -192,10 +210,10 @@ diff -uNr binutils-2.15.90.0.1.1.orig/include/bfdlink.h binutils-2.15.90.0.1.1/i
 +	  link_info.noexecheap = TRUE;
 +	  link_info.execheap = FALSE;
 +	}
-       /* What about the other Solaris -z options? FIXME.  */
-       break;
- EOF
-@@ -1730,6 +1740,7 @@
+       else if (strcmp (optarg, "relro") == 0)
+ 	link_info.relro = TRUE;
+       else if (strcmp (optarg, "norelro") == 0)
+@@ -1729,6 +1739,7 @@
    fprintf (file, _("  -z combreloc\t\tMerge dynamic relocs into one section and sort\n"));
    fprintf (file, _("  -z defs\t\tReport unresolved symbols in object files.\n"));
    fprintf (file, _("  -z execstack\t\tMark executable as requiring executable stack\n"));
@@ -203,18 +221,18 @@ diff -uNr binutils-2.15.90.0.1.1.orig/include/bfdlink.h binutils-2.15.90.0.1.1/i
    fprintf (file, _("  -z initfirst\t\tMark DSO to be initialized first at runtime\n"));
    fprintf (file, _("  -z interpose\t\tMark object to interpose all DSOs but executable\n"));
    fprintf (file, _("  -z loadfltr\t\tMark object requiring immediate process\n"));
-@@ -1741,6 +1752,7 @@
+@@ -1740,6 +1751,7 @@
    fprintf (file, _("  -z nodlopen\t\tMark DSO not available to dlopen\n"));
    fprintf (file, _("  -z nodump\t\tMark DSO not available to dldump\n"));
    fprintf (file, _("  -z noexecstack\tMark executable as not requiring executable stack\n"));
-+  fprintf (file, _("  -z noexecheap\t\tMark executable as not requiring executable heap\n"));
++  fprintf (file, _("  -z noexecheap\tMark executable as not requiring executable heap\n"));
    fprintf (file, _("  -z norelro\t\tDon't create RELRO program header\n"));
    fprintf (file, _("  -z now\t\tMark object non-lazy runtime binding\n"));
    fprintf (file, _("  -z origin\t\tMark object requiring immediate \$ORIGIN processing\n\t\t\t  at runtime\n"));
-diff -uNr binutils-2.15.90.0.1.1.orig/ld/ldgram.y binutils-2.15.90.0.1.1/ld/ldgram.y
---- binutils-2.15.90.0.1.1.orig/ld/ldgram.y	2004-03-03 21:24:34.000000000 +0100
-+++ binutils-2.15.90.0.1.1/ld/ldgram.y	2004-03-17 11:51:21.123886400 +0100
-@@ -1019,6 +1019,8 @@
+diff -uNr binutils-2.15.94.0.2.2.orig/ld/ldgram.y binutils-2.15.94.0.2.2/ld/ldgram.y
+--- binutils-2.15.94.0.2.2.orig/ld/ldgram.y	2004-11-22 21:33:32.000000000 +0100
++++ binutils-2.15.94.0.2.2/ld/ldgram.y	2005-02-20 13:13:17.499537376 +0100
+@@ -1073,6 +1073,8 @@
  			    $$ = exp_intop (0x6474e550);
  			  else if (strcmp (s, "PT_GNU_STACK") == 0)
  			    $$ = exp_intop (0x6474e551);
