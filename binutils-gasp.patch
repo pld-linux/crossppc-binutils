@@ -40,86 +40,6 @@ diff -Nur binutils-2.13.90.0.18.orig/gas/Makefile.am binutils-2.13.90.0.18/gas/M
  itbl-ops.o: itbl-ops.c itbl-ops.h $(INCDIR)/symcat.h
  e-crisaout.o: $(srcdir)/config/e-crisaout.c $(INCDIR)/symcat.h \
    emul-target.h
---- binutils-2.14.90.0.7/gas/Makefile.in.orig	2003-10-29 18:37:48.000000000 +0100
-+++ binutils-2.14.90.0.7/gas/Makefile.in	2003-11-04 00:08:05.641363288 +0100
-@@ -365,7 +365,7 @@
- 	write.c
- 
- 
--CFILES = $(GAS_CFILES) itbl-ops.c
-+CFILES = $(GAS_CFILES) gasp.c itbl-ops.c
- 
- HFILES = \
- 	as.h \
-@@ -631,7 +631,8 @@
- 
- # Note: GASP is now deprecated and has been removed.  It is still
- # available in the CVS archive or older binutils releases if it is needed.
--noinst_PROGRAMS = as-new
-+# ...and it is needed for few packages in distribution.
-+noinst_PROGRAMS = as-new gasp-new
- noinst_SCRIPTS = $(GDBINIT)
- EXTRA_SCRIPTS = .gdbinit
- 
-@@ -678,6 +679,10 @@
- 	$(extra_objects) $(GASLIBS) $(INTLDEPS)
- 
- 
-+gasp_new_SOURCES = gasp.c macro.c sb.c hash.c
-+gasp_new_LDADD = ../libiberty/libiberty.a $(INTLLIBS)
-+gasp_new_DEPENDENCIES = ../libiberty/libiberty.a $(INTLDEPS)
-+
- EXPECT = `if [ -f $${rootme}/../expect/expect ] ; then \
-           echo $${rootme}/../expect/expect ; \
-           else echo expect ; fi`
-@@ -2515,7 +2520,7 @@
- CONFIG_HEADER = config.h
- CONFIG_CLEAN_FILES = gdb.ini .gdbinit po/Makefile.in
- EXTRA_PROGRAMS = itbl-test$(EXEEXT)
--noinst_PROGRAMS = as-new$(EXEEXT)
-+noinst_PROGRAMS = as-new$(EXEEXT) gasp-new$(EXEEXT)
- PROGRAMS = $(noinst_PROGRAMS)
- 
- am__objects_1 = app.$(OBJEXT) as.$(OBJEXT) atof-generic.$(OBJEXT) \
-@@ -2531,6 +2536,10 @@
- am_as_new_OBJECTS = $(am__objects_1)
- as_new_OBJECTS = $(am_as_new_OBJECTS)
- as_new_LDFLAGS =
-+am_gasp_new_OBJECTS = gasp.$(OBJEXT) macro.$(OBJEXT) sb.$(OBJEXT) \
-+	hash.$(OBJEXT)
-+gasp_new_OBJECTS = $(am_gasp_new_OBJECTS)
-+gasp_new_LDFLAGS =
- am_itbl_test_OBJECTS = itbl-parse.$(OBJEXT) itbl-lex.$(OBJEXT)
- itbl_test_OBJECTS = $(am_itbl_test_OBJECTS)
- itbl_test_DEPENDENCIES = itbl-tops.o itbl-test.o \
-@@ -2562,7 +2571,7 @@
- 	install-data-recursive install-exec-recursive \
- 	installdirs-recursive install-recursive uninstall-recursive \
- 	check-recursive installcheck-recursive
--SOURCES = $(as_new_SOURCES) $(EXTRA_as_new_SOURCES) $(itbl_test_SOURCES)
-+SOURCES = $(as_new_SOURCES) $(EXTRA_as_new_SOURCES) $(itbl_test_SOURCES) $(gasp_new_SOURCES)
- 
- all: config.h
- 	$(MAKE) $(AM_MAKEFLAGS) all-recursive
-@@ -2616,6 +2625,9 @@
- as-new$(EXEEXT): $(as_new_OBJECTS) $(as_new_DEPENDENCIES) 
- 	@rm -f as-new$(EXEEXT)
- 	$(LINK) $(as_new_LDFLAGS) $(as_new_OBJECTS) $(as_new_LDADD) $(LIBS)
-+gasp-new$(EXEEXT): $(gasp_new_OBJECTS) $(gasp_new_DEPENDENCIES)
-+	@rm -f gasp-new$(EXEEXT)
-+	$(LINK) $(gasp_new_LDFLAGS) $(gasp_new_OBJECTS) $(gasp_new_LDADD) $(LIBS)
- itbl-test$(EXEEXT): $(itbl_test_OBJECTS) $(itbl_test_DEPENDENCIES) 
- 	@rm -f itbl-test$(EXEEXT)
- 	$(LINK) $(itbl_test_LDFLAGS) $(itbl_test_OBJECTS) $(itbl_test_LDADD) $(LIBS)
-@@ -3387,6 +3399,8 @@
-   $(INCDIR)/obstack.h subsegs.h struc-symbol.h
- write.o: write.c $(INCDIR)/symcat.h subsegs.h $(INCDIR)/obstack.h \
-   output-file.h dwarf2dbg.h
-+gasp.o: gasp.c $(INCDIR)/getopt.h $(INCDIR)/safe-ctype.h \
-+  sb.h macro.h $(INCDIR)/xregex.h $(INCDIR)/xregex2.h
- itbl-ops.o: itbl-ops.c itbl-ops.h $(INCDIR)/symcat.h
- e-crisaout.o: $(srcdir)/config/e-crisaout.c $(INCDIR)/symcat.h \
-   emul-target.h
 diff -Nur binutils-2.13.90.0.18.orig/gas/doc/Makefile.am binutils-2.13.90.0.18/gas/doc/Makefile.am
 --- binutils-2.13.90.0.18.orig/gas/doc/Makefile.am	Sun Feb  2 03:21:17 2003
 +++ binutils-2.13.90.0.18/gas/doc/Makefile.am	Sun Feb  2 12:35:43 2003
@@ -132,31 +52,6 @@ diff -Nur binutils-2.13.90.0.18.orig/gas/doc/Makefile.am binutils-2.13.90.0.18/g
  
  asconfig.texi: $(CONFIG).texi
  	rm -f asconfig.texi
---- binutils-2.14.90.0.7/gas/doc/Makefile.in.orig	2003-10-29 18:37:48.000000000 +0100
-+++ binutils-2.14.90.0.7/gas/doc/Makefile.in	2003-11-04 00:08:38.143422224 +0100
-@@ -181,7 +181,7 @@
- 
- man_MANS = as.1
- 
--info_TEXINFOS = as.texinfo 
-+info_TEXINFOS = as.texinfo gasp.texinfo
- 
- CPU_DOCS = \
- 	c-a29k.texi \
-@@ -236,11 +236,11 @@
- DIST_SOURCES =
- TEXINFO_TEX = $(top_srcdir)/../texinfo/texinfo.tex
- am__TEXINFO_TEX_DIR = $(top_srcdir)/../texinfo
--INFO_DEPS = as.info
-+INFO_DEPS = as.info gasp.info
- DVIS = as.dvi
- PDFS = as.pdf
- PSS = as.ps
--TEXINFOS = as.texinfo
-+TEXINFOS = as.texinfo gasp.texinfo
- 
- NROFF = nroff
- MANS = $(man_MANS)
 diff -Nur binutils-2.14.90.0.7.orig/gas/doc/gasp.texinfo binutils-2.14.90.0.7/gas/doc/gasp.texinfo
 --- binutils-2.14.90.0.7.orig/gas/doc/gasp.texinfo	Thu Jan  1 01:00:00 1970
 +++ binutils-2.14.90.0.7/gas/doc/gasp.texinfo	Wed Oct 30 05:09:13 2002
