@@ -106,19 +106,27 @@ Index: gas/config/tc-mips.c
 RCS file: /cvsroot/gcc/src-cvs/src/gas/config/tc-mips.c,v
 retrieving revision 1.263
 diff -u -r1.263 tc-mips.c
---- gas/config/tc-mips.c	29 Apr 2004 05:14:21 -0000	1.263
-+++ gas/config/tc-mips.c	5 May 2004 17:38:51 -0000
-@@ -10861,8 +10861,7 @@
+--- gas/config/tc-mips.c.orig	2004-11-22 21:33:32.000000000 +0100
++++ gas/config/tc-mips.c	2004-11-23 23:59:24.000000000 +0100
+@@ -10932,8 +10932,6 @@
+ 
    buf = (bfd_byte *) (fixP->fx_frag->fr_literal + fixP->fx_where);
  
-   /* We are not done if this is a composite relocation to set up gp.  */
 -  assert (! fixP->fx_pcrel);
--  if (fixP->fx_addsy == NULL
-+  if (fixP->fx_addsy == NULL && ! fixP->fx_pcrel
-       && !(fixP->fx_r_type == BFD_RELOC_MIPS_SUB
- 	   || (fixP->fx_r_type == BFD_RELOC_64
- 	       && (previous_fx_r_type == BFD_RELOC_GPREL32
-@@ -12723,8 +12722,27 @@
+-
+   /* Don't treat parts of a composite relocation as done.  There are two
+      reasons for this:
+ 
+@@ -10944,7 +10942,7 @@
+ 	 constants.  The easiest way of dealing with the pathological
+ 	 exceptions is to generate a relocation against STN_UNDEF and
+ 	 leave everything up to the linker.  */
+-  if (fixP->fx_addsy == NULL && fixP->fx_tcbit == 0)
++  if (fixP->fx_addsy == NULL && (! fixP->fx_pcrel) && fixP->fx_tcbit == 0)
+     fixP->fx_done = 1;
+ 
+   switch (fixP->fx_r_type)
+@@ -12800,8 +12798,27 @@
    *reloc->sym_ptr_ptr = symbol_get_bfdsym (fixp->fx_addsy);
    reloc->address = fixp->fx_frag->fr_address + fixp->fx_where;
  
@@ -148,7 +156,7 @@ diff -u -r1.263 tc-mips.c
  
    /* Since the old MIPS ELF ABI uses Rel instead of Rela, encode the vtable
       entry to be used in the relocation's section offset.  */
-@@ -12735,6 +12753,34 @@
+@@ -12812,6 +12829,34 @@
      }
  
    code = fixp->fx_r_type;
