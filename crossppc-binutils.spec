@@ -15,6 +15,7 @@ URL:		http://sources.redhat.com/binutils/
 BuildRequires:	bash
 BuildRequires:	bison
 BuildRequires:	flex
+BuildRequires:	gettext-devel
 BuildRequires:	perl-devel
 ExcludeArch:	ppc
 BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
