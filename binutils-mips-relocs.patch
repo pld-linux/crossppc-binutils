@@ -1,0 +1,342 @@
+From binutils-return-33437-listarch-binutils=sources dot redhat dot com at sources dot redhat dot com Wed May 05 17:45:08 2004
+Return-Path: <binutils-return-33437-listarch-binutils=sources dot redhat dot com at sources dot redhat dot com>
+Delivered-To: listarch-binutils at sources dot redhat dot com
+Received: (qmail 20913 invoked by alias); 5 May 2004 17:45:08 -0000
+Mailing-List: contact binutils-help at sources dot redhat dot com; run by ezmlm
+Precedence: bulk
+List-Subscribe: <mailto:binutils-subscribe at sources dot redhat dot com>
+List-Archive: <http://sources.redhat.com/ml/binutils/>
+List-Post: <mailto:binutils at sources dot redhat dot com>
+List-Help: <mailto:binutils-help at sources dot redhat dot com>, <http://sources dot redhat dot com/ml/#faqs>
+Sender: binutils-owner at sources dot redhat dot com
+Delivered-To: mailing list binutils at sources dot redhat dot com
+Received: (qmail 20904 invoked from network); 5 May 2004 17:45:05 -0000
+Received: from unknown (HELO dmz.algor.co.uk) (62.254.210.145)
+  by sources dot redhat dot com with SMTP; 5 May 2004 17:45:05 -0000
+Received: from alg158.algor.co.uk ([62.254.210.158] helo=olympia.mips.com)
+	by dmz dot algor dot co dot uk with esmtp (Exim 3 dot 35 #1 (Debian))
+	id 1BLQgU-0007Tz-00; Wed, 05 May 2004 18:59:54 +0100
+Received: from stockwell.mips.com ([192.168.192.238])
+	by olympia dot mips dot com with esmtp (Exim 3 dot 36 #1 (Debian))
+	id 1BLQRk-0004Mi-00; Wed, 05 May 2004 18:44:40 +0100
+Subject: Re: [mips patch RFC] removal of gas embedded-pic support code
+From: David Ung <davidu at mips dot com>
+To: cgd at broadcom dot com, ica2_ts at csv dot ica dot uni-stuttgart dot de,  binutils at sources dot redhat dot com
+Content-Type: text/plain
+Organization: MIPS Technologies UK
+Message-Id: <1083779079.31797.223.camel@stockwell.mips.com>
+Mime-Version: 1.0
+Date: Wed, 05 May 2004 18:44:40 +0100
+Content-Transfer-Encoding: 7bit
+X-MTUK-Scanner: Found to be clean
+X-MTUK-SpamCheck: not spam, SpamAssassin (score=-4.833, required 4, AWL,
+	BAYES_00)
+
+>At Thu, 29 Apr 2004 02:46:46 +0000 (UTC), "Thiemo Seufer" wrote:
+>> I think it is ok.
+>
+>Thanks for looking it over.
+>
+>I've checked it in.  I *really* hope it really doesn't break
+>anything.  8-)
+>
+>
+>chris
+
+Chris,
+
+woops.  your recent patch seem to have broke building of the compiler on
+linux.  The problem occurs when building for libgcc/./_divdi3.o
+
+gas fails with:
+Error: operation combines symbols in different segments
+
+as it is trying to assemble this piece of .s code generated from gcc.
+
+        .section        .eh_frame,"aw",@progbits
+$Lframe1:
+        .4byte  $LECIE1-$LSCIE1
+$LSCIE1:
+        .4byte  0x0
+        .byte   0x1
+        .ascii  "zR\000"
+        .uleb128 0x1
+        .sleb128 4
+        .byte   0x1f
+        .uleb128 0x1
+        .byte   0x1b
+        .byte   0xc
+        .uleb128 0x1d
+        .uleb128 0x0
+        .align  2
+$LECIE1:
+$LSFDE1:
+        .4byte  $LEFDE1-$LASFDE1
+$LASFDE1:
+        .4byte  $LASFDE1-$Lframe1
+        .4byte  $LFB42-.		**
+        .4byte  $LFE42-$LFB42
+        .uleb128 0x0
+
+** $LFB42 is from the text section of divdi3.
+
+I've reverted back the necessary changes to your patch, so that it now
+works with the above.
+
+David.
+
+
+
+Index: bfd/ChangeLog
+===================================================================
+RCS file: /cvsroot/gcc/src-cvs/src/bfd/ChangeLog,v
+retrieving revision 1.2535
+diff -u -r1.2535 ChangeLog
+--- bfd/ChangeLog	3 May 2004 14:52:01 -0000	1.2535
++++ bfd/ChangeLog	5 May 2004 17:38:51 -0000
+@@ -1,0 +1,12 @@
++2004-05-05  David Ung  <davidu@mips.com>
++
++	* elfxx-mips.c (mips_elf_calculate_relocation): Put back cases for
++	R_MIPS_PC32 and R_MIPS_PC64. 
++
++	* elf32-mips.c: Put back elf_mips_gnu_pcrel64 and
++	elf_mips_gnu_pcrel32. 
++	(bfd_elf32_bfd_reloc_type_lookup): Put back cases for
++	BFD_RELOC_64_PCREL and BFD_RELOC_32_PCREL.
++	(mips_elf32_rtype_to_howto): Put back cases for R_MIPS_PC32 and
++	R_MIPS_PC64. 
++
+Index: bfd/elf32-mips.c
+===================================================================
+RCS file: /cvsroot/gcc/src-cvs/src/bfd/elf32-mips.c,v
+retrieving revision 1.175
+diff -u -r1.175 elf32-mips.c
+--- bfd/elf32-mips.c	24 Apr 2004 22:07:13 -0000	1.175
++++ bfd/elf32-mips.c	5 May 2004 17:38:51 -0000
+@@ -615,6 +615,38 @@
+ 	 0xffff,		/* dst_mask */
+ 	 TRUE);			/* pcrel_offset */
+ 
++/* 64 bit pc-relative.  */
++static reloc_howto_type elf_mips_gnu_pcrel64 =
++  HOWTO (R_MIPS_PC64,		/* type */
++	 0,			/* rightshift */
++	 4,			/* size (0 = byte, 1 = short, 2 = long) */
++	 64,			/* bitsize */
++	 TRUE,			/* pc_relative */
++	 0,			/* bitpos */
++	 complain_overflow_signed, /* complain_on_overflow */
++	 _bfd_mips_elf_generic_reloc, /* special_function */
++	 "R_MIPS_PC64",		/* name */
++	 TRUE,			/* partial_inplace */
++	 MINUS_ONE,		/* src_mask */
++	 MINUS_ONE,		/* dst_mask */
++	 TRUE);			/* pcrel_offset */
++
++/* 32 bit pc-relative.  */
++static reloc_howto_type elf_mips_gnu_pcrel32 =
++  HOWTO (R_MIPS_PC32,		/* type */
++	 0,			/* rightshift */
++	 2,			/* size (0 = byte, 1 = short, 2 = long) */
++	 32,			/* bitsize */
++	 TRUE,			/* pc_relative */
++	 0,			/* bitpos */
++	 complain_overflow_signed, /* complain_on_overflow */
++	 _bfd_mips_elf_generic_reloc, /* special_function */
++	 "R_MIPS_PC32",		/* name */
++	 TRUE,			/* partial_inplace */
++	 0xffffffff,		/* src_mask */
++	 0xffffffff,		/* dst_mask */
++	 TRUE);			/* pcrel_offset */
++
+ /* GNU extension to record C++ vtable hierarchy */
+ static reloc_howto_type elf_mips_gnu_vtinherit_howto =
+   HOWTO (R_MIPS_GNU_VTINHERIT,	/* type */
+@@ -1071,6 +1103,10 @@
+       return &elf_mips_gnu_vtentry_howto;
+     case BFD_RELOC_16_PCREL_S2:
+       return &elf_mips_gnu_rel16_s2;
++    case BFD_RELOC_64_PCREL:
++      return &elf_mips_gnu_pcrel64;
++    case BFD_RELOC_32_PCREL:
++      return &elf_mips_gnu_pcrel32;
+     }
+ }
+ 
+@@ -1092,6 +1128,10 @@
+       return &elf_mips_gnu_vtentry_howto;
+     case R_MIPS_GNU_REL16_S2:
+       return &elf_mips_gnu_rel16_s2;
++    case R_MIPS_PC64:
++      return &elf_mips_gnu_pcrel64;
++    case R_MIPS_PC32:
++      return &elf_mips_gnu_pcrel32;
+     default:
+       BFD_ASSERT (r_type < (unsigned int) R_MIPS_max);
+       return &elf_mips_howto_table_rel[r_type];
+Index: bfd/elfxx-mips.c
+===================================================================
+RCS file: /cvsroot/gcc/src-cvs/src/bfd/elfxx-mips.c,v
+retrieving revision 1.100
+diff -u -r1.100 elfxx-mips.c
+--- bfd/elfxx-mips.c	24 Apr 2004 22:07:13 -0000	1.100
++++ bfd/elfxx-mips.c	5 May 2004 17:38:51 -0000
+@@ -3335,6 +3335,12 @@
+       value &= howto->dst_mask;
+       break;
+ 
++    case R_MIPS_PC32:
++    case R_MIPS_PC64:
++      value = symbol + addend - p;
++      value &= howto->dst_mask;
++      break;
++
+     case R_MIPS_GNU_REL16_S2:
+       value = symbol + _bfd_mips_elf_sign_extend (addend, 18) - p;
+       overflowed_p = mips_elf_overflow_p (value, 18);
+Index: gas/ChangeLog
+===================================================================
+RCS file: /cvsroot/gcc/src-cvs/src/gas/ChangeLog,v
+retrieving revision 1.2114
+diff -u -r1.2114 ChangeLog
+--- gas/ChangeLog	29 Apr 2004 05:14:20 -0000	1.2114
++++ gas/ChangeLog	5 May 2004 17:38:51 -0000
+@@ -1,0 +1,6 @@
++2004-05-05  David Ung  <davidu@mips.com>
++
++	* config/tc-mips.c (md_apply_fix3): Revert last change.
++	(tc_gen_reloc): Put back pc rel handling.
++	* config/tc-mips.h: Defines DIFF_EXPR_OK.
++
+Index: gas/config/tc-mips.c
+===================================================================
+RCS file: /cvsroot/gcc/src-cvs/src/gas/config/tc-mips.c,v
+retrieving revision 1.263
+diff -u -r1.263 tc-mips.c
+--- gas/config/tc-mips.c	29 Apr 2004 05:14:21 -0000	1.263
++++ gas/config/tc-mips.c	5 May 2004 17:38:51 -0000
+@@ -10861,8 +10861,7 @@
+   buf = (bfd_byte *) (fixP->fx_frag->fr_literal + fixP->fx_where);
+ 
+   /* We are not done if this is a composite relocation to set up gp.  */
+-  assert (! fixP->fx_pcrel);
+-  if (fixP->fx_addsy == NULL
++  if (fixP->fx_addsy == NULL && ! fixP->fx_pcrel
+       && !(fixP->fx_r_type == BFD_RELOC_MIPS_SUB
+ 	   || (fixP->fx_r_type == BFD_RELOC_64
+ 	       && (previous_fx_r_type == BFD_RELOC_GPREL32
+@@ -12723,8 +12722,27 @@
+   *reloc->sym_ptr_ptr = symbol_get_bfdsym (fixp->fx_addsy);
+   reloc->address = fixp->fx_frag->fr_address + fixp->fx_where;
+ 
+-  assert (! fixp->fx_pcrel);
+-  reloc->addend = fixp->fx_addnumber;
++  if (fixp->fx_pcrel)
++    {
++      bfd_vma pcrel_address;
++
++      pcrel_address = reloc->address;
++
++      if (OUTPUT_FLAVOR == bfd_target_elf_flavour)
++	{
++	  /* At this point, fx_addnumber is "symbol offset - pcrel_address".
++	     Relocations want only the symbol offset.  */
++	  reloc->addend = fixp->fx_addnumber + pcrel_address;
++	}
++      else
++	{
++	  /* A gruesome hack which is a result of the gruesome gas reloc
++	     handling.  */
++	  reloc->addend = pcrel_address;
++	}
++    }
++  else
++    reloc->addend = fixp->fx_addnumber;
+ 
+   /* Since the old MIPS ELF ABI uses Rel instead of Rela, encode the vtable
+      entry to be used in the relocation's section offset.  */
+@@ -12735,6 +12753,34 @@
+     }
+ 
+   code = fixp->fx_r_type;
++  if (fixp->fx_pcrel)
++    {
++      switch (code)
++	{
++	case BFD_RELOC_8:
++	  code = BFD_RELOC_8_PCREL;
++	  break;
++	case BFD_RELOC_16:
++	  code = BFD_RELOC_16_PCREL;
++	  break;
++	case BFD_RELOC_32:
++	  code = BFD_RELOC_32_PCREL;
++	  break;
++	case BFD_RELOC_64:
++	  code = BFD_RELOC_64_PCREL;
++	  break;
++	case BFD_RELOC_8_PCREL:
++	case BFD_RELOC_16_PCREL:
++	case BFD_RELOC_32_PCREL:
++	case BFD_RELOC_64_PCREL:
++	case BFD_RELOC_16_PCREL_S2:
++	  break;
++	default:
++	  as_bad_where (fixp->fx_file, fixp->fx_line,
++			_("Cannot make %s relocation PC relative"),
++			bfd_get_reloc_code_name (code));
++	}
++    }
+ 
+   /* To support a PC relative reloc, we used a Cygnus extension.
+      We check for that here to make sure that we don't let such a
+Index: gas/config/tc-mips.h
+===================================================================
+RCS file: /cvsroot/gcc/src-cvs/src/gas/config/tc-mips.h,v
+retrieving revision 1.35
+diff -u -r1.35 tc-mips.h
+--- gas/config/tc-mips.h	29 Apr 2004 05:14:22 -0000	1.35
++++ gas/config/tc-mips.h	5 May 2004 17:38:51 -0000
+@@ -58,6 +58,10 @@
+ 
+ #define MAX_MEM_FOR_RS_ALIGN_CODE  (1 + 2)
+ 
++/* We permit PC relative difference expressions when generating
++   embedded PIC code.  */
++#define DIFF_EXPR_OK
++
+ /* Tell assembler that we have an itbl_mips.h header file to include.  */
+ #define HAVE_ITBL_CPU
+ 
+Index: include/elf/ChangeLog
+===================================================================
+RCS file: /cvsroot/gcc/src-cvs/src/include/elf/ChangeLog,v
+retrieving revision 1.205
+diff -u -r1.205 ChangeLog
+--- include/elf/ChangeLog	24 Apr 2004 22:07:14 -0000	1.205
++++ include/elf/ChangeLog	5 May 2004 17:38:51 -0000
+@@ -1,3 +1,7 @@
++2004-05-05  David Ung  <davidu@mips.com>
++
++	* mips.h: Put back R_MIPS_PC32 and R_MIPS_PC64.
++
+ 2004-04-24  Chris Demetriou  <cgd@broadcom.com>
+ 
+ 	* mips.h (R_MIPS_PC32, R_MIPS_PC64, R_MIPS_GNU_REL_LO16)
+Index: include/elf/mips.h
+===================================================================
+RCS file: /cvsroot/gcc/src-cvs/src/include/elf/mips.h,v
+retrieving revision 1.22
+diff -u -r1.22 mips.h
+--- include/elf/mips.h	24 Apr 2004 22:07:14 -0000	1.22
++++ include/elf/mips.h	5 May 2004 17:38:51 -0000
+@@ -76,6 +76,8 @@
+   /* These relocs are used for the mips16.  */
+   RELOC_NUMBER (R_MIPS16_26, 100)
+   RELOC_NUMBER (R_MIPS16_GPREL, 101)
++  RELOC_NUMBER (R_MIPS_PC32, 248)
++  RELOC_NUMBER (R_MIPS_PC64, 249)
+   /* FIXME: this relocation is used internally by gas.  */
+   RELOC_NUMBER (R_MIPS_GNU_REL16_S2, 250)
+   /* These are GNU extensions to enable C++ vtable garbage collection.  */
