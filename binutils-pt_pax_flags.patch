@@ -73,9 +73,8 @@ diff -uNr binutils-2.15.90.0.1.1.orig/bfd/elf.c binutils-2.15.90.0.1.1/bfd/elf.c
     && (segment->p_type != PT_TLS					\
         || (section->flags & SEC_THREAD_LOCAL))				\
     && (segment->p_type == PT_LOAD					\
-diff -uNr binutils-2.15.90.0.1.1.orig/bfd/elflink.h binutils-2.15.90.0.1.1/bfd/elflink.h
---- binutils-2.15.90.0.1.1.orig/bfd/elflink.h	2004-03-03 21:24:33.000000000 +0100
-+++ binutils-2.15.90.0.1.1/bfd/elflink.h	2004-03-17 12:05:53.403279776 +0100
+--- binutils-2.15.90.0.3.orig/bfd/elflink.c	2004-03-03 21:24:33.000000000 +0100
++++ binutils-2.15.90.0.3/bfd/elflink.c	2004-03-17 12:05:53.403279776 +0100
 @@ -1654,16 +1654,30 @@
    if (!is_elf_hash_table (info->hash))
      return TRUE;
