@@ -5,7 +5,7 @@ Summary(pl):	Skro¶ne narzêdzia programistyczne GNU dla PPC - binutils
 Summary(pt_BR):	Utilitários para desenvolvimento de binários da GNU - PPC binutils
 Summary(tr):	GNU geliþtirme araçlarý - PPC binutils
 Name:		crossppc-binutils
-Version:	2.15.94.0.1
+Version:	2.15.94.0.2
 Release:	1
 License:	GPL
 Group:		Development/Tools
