@@ -11,20 +11,19 @@ diff -uNr binutils-2.15.90.0.1.1.orig/bfd/elf-bfd.h binutils-2.15.90.0.1.1/bfd/e
    /* Symbol version definitions in external objects.  */
    Elf_Internal_Verdef *verdef;
  
-diff -uNr binutils-2.15.90.0.1.1.orig/bfd/elf.c binutils-2.15.90.0.1.1/bfd/elf.c
---- binutils-2.15.90.0.1.1.orig/bfd/elf.c	2004-03-03 21:24:33.000000000 +0100
-+++ binutils-2.15.90.0.1.1/bfd/elf.c	2004-03-17 11:57:20.657229024 +0100
-@@ -968,6 +968,7 @@
- 	    case PT_TLS: pt = "TLS"; break;
+--- binutils-2.15.91.0.1/bfd/elf.c.orig	2004-05-27 20:26:02.000000000 +0200
++++ binutils-2.15.91.0.1/bfd/elf.c	2004-05-30 02:32:15.280667440 +0200
+@@ -996,6 +996,7 @@
  	    case PT_GNU_EH_FRAME: pt = "EH_FRAME"; break;
  	    case PT_GNU_STACK: pt = "STACK"; break;
+ 	    case PT_GNU_RELRO: pt = "RELRO"; break;
 +	    case PT_PAX_FLAGS: pt = "PAX_FLAGS"; break;
  	    default: sprintf (buf, "0x%lx", p->p_type); pt = buf; break;
  	    }
  	  fprintf (f, "%8s off    0x", pt);
-@@ -2292,6 +2293,9 @@
-     case PT_GNU_STACK:
-       return _bfd_elf_make_section_from_phdr (abfd, hdr, index, "stack");
+@@ -2325,6 +2326,9 @@
+     case PT_GNU_RELRO:
+       return _bfd_elf_make_section_from_phdr (abfd, hdr, index, "relro");
  
 +    case PT_PAX_FLAGS:
 +      return _bfd_elf_make_section_from_phdr (abfd, hdr, index, "pax_flags");
@@ -32,7 +31,7 @@ diff -uNr binutils-2.15.90.0.1.1.orig/bfd/elf.c binutils-2.15.90.0.1.1/bfd/elf.c
      default:
        /* Check for any processor-specific program segment types.
           If no handler for them, default to making "segment" sections.  */
-@@ -3502,6 +3506,20 @@
+@@ -3587,6 +3591,20 @@
        pm = &m->next;
      }
  
@@ -53,7 +52,7 @@ diff -uNr binutils-2.15.90.0.1.1.orig/bfd/elf.c binutils-2.15.90.0.1.1/bfd/elf.c
    free (sections);
    sections = NULL;
  
-@@ -4123,6 +4141,11 @@
+@@ -4245,6 +4263,11 @@
        ++segs;
      }
  
@@ -65,7 +64,7 @@ diff -uNr binutils-2.15.90.0.1.1.orig/bfd/elf.c binutils-2.15.90.0.1.1/bfd/elf.c
    for (s = abfd->sections; s != NULL; s = s->next)
      {
        if ((s->flags & SEC_LOAD) != 0
-@@ -4672,6 +4695,7 @@
+@@ -4794,6 +4817,7 @@
      || IS_COREFILE_NOTE (segment, section))				\
     && section->output_section != NULL					\
     && segment->p_type != PT_GNU_STACK					\
@@ -73,12 +72,12 @@ diff -uNr binutils-2.15.90.0.1.1.orig/bfd/elf.c binutils-2.15.90.0.1.1/bfd/elf.c
     && (segment->p_type != PT_TLS					\
         || (section->flags & SEC_THREAD_LOCAL))				\
     && (segment->p_type == PT_LOAD					\
---- binutils-2.15.90.0.3.orig/bfd/elflink.c	2004-03-03 21:24:33.000000000 +0100
-+++ binutils-2.15.90.0.3/bfd/elflink.c	2004-03-17 12:05:53.403279776 +0100
-@@ -1654,16 +1654,30 @@
-   if (!is_elf_hash_table (info->hash))
+--- binutils-2.15.91.0.1/bfd/elflink.c.orig	2004-05-27 20:26:02.000000000 +0200
++++ binutils-2.15.91.0.1/bfd/elflink.c	2004-05-30 02:34:22.532322248 +0200
+@@ -4628,16 +4628,30 @@
      return TRUE;
  
+   elf_tdata (output_bfd)->relro = info->relro;
 +  elf_tdata (output_bfd)->pax_flags = PF_NORANDEXEC;
 +
 +  if (info->execheap)
@@ -106,7 +105,7 @@ diff -uNr binutils-2.15.90.0.1.1.orig/bfd/elf.c binutils-2.15.90.0.1.1/bfd/elf.c
        for (inputobj = info->input_bfds;
  	   inputobj;
  	   inputobj = inputobj->link_next)
-@@ -1676,7 +1690,11 @@
+@@ -4650,7 +4664,11 @@
  	  if (s)
  	    {
  	      if (s->flags & SEC_CODE)
@@ -119,13 +118,12 @@ diff -uNr binutils-2.15.90.0.1.1.orig/bfd/elf.c binutils-2.15.90.0.1.1/bfd/elf.c
  	      notesec = s;
  	    }
  	  else
-diff -uNr binutils-2.15.90.0.1.1.orig/binutils/readelf.c binutils-2.15.90.0.1.1/binutils/readelf.c
---- binutils-2.15.90.0.1.1.orig/binutils/readelf.c	2004-03-03 21:24:34.000000000 +0100
-+++ binutils-2.15.90.0.1.1/binutils/readelf.c	2004-03-17 12:07:27.989900424 +0100
-@@ -2144,6 +2144,7 @@
-     case PT_GNU_EH_FRAME:
+--- binutils-2.15.91.0.1/binutils/readelf.c.orig	2004-05-27 20:26:02.000000000 +0200
++++ binutils-2.15.91.0.1/binutils/readelf.c	2004-05-30 02:34:52.746728960 +0200
+@@ -2190,6 +2190,7 @@
  			return "GNU_EH_FRAME";
      case PT_GNU_STACK:	return "STACK";
+     case PT_GNU_RELRO:  return "GNU_RELRO";
 +    case PT_PAX_FLAGS:	return "PAX_FLAGS";
  
      default:
@@ -148,13 +146,12 @@ diff -uNr binutils-2.15.90.0.1.1.orig/include/bfdlink.h binutils-2.15.90.0.1.1/i
    /* What to do with unresolved symbols in an object file.
       When producing static binaries the default is GENERATE_ERROR.
       When producing dynamic binaries the default is IGNORE.  The
-diff -uNr binutils-2.15.90.0.1.1.orig/include/elf/common.h binutils-2.15.90.0.1.1/include/elf/common.h
---- binutils-2.15.90.0.1.1.orig/include/elf/common.h	2004-03-03 21:24:34.000000000 +0100
-+++ binutils-2.15.90.0.1.1/include/elf/common.h	2004-03-17 11:55:02.074296832 +0100
-@@ -289,12 +289,27 @@
- 
- #define PT_GNU_EH_FRAME	(PT_LOOS + 0x474e550)
- #define PT_GNU_STACK	(PT_LOOS + 0x474e551)
+--- binutils-2.15.91.0.1/include/elf/common.h.orig	2004-05-27 20:26:04.000000000 +0200
++++ binutils-2.15.91.0.1/include/elf/common.h	2004-05-30 02:36:25.633608008 +0200
+@@ -291,12 +291,27 @@
+ #define PT_GNU_EH_FRAME	(PT_LOOS + 0x474e550) /* Frame unwind information */
+ #define PT_GNU_STACK	(PT_LOOS + 0x474e551) /* Stack flags */
+ #define PT_GNU_RELRO	(PT_LOOS + 0x474e552) /* Read-only after relocation */
 +#define PT_PAX_FLAGS	(PT_LOOS + 0x5041580)
  
  /* Program segment permissions, in program header p_flags field.  */
@@ -179,13 +176,12 @@ diff -uNr binutils-2.15.90.0.1.1.orig/include/elf/common.h binutils-2.15.90.0.1.
  /* #define PF_MASKOS	0x0F000000    *//* OS-specific reserved bits */
  #define PF_MASKOS	0x0FF00000	/* New value, Oct 4, 1999 Draft */
  #define PF_MASKPROC	0xF0000000	/* Processor-specific reserved bits */
-diff -uNr binutils-2.15.90.0.1.1.orig/ld/emultempl/elf32.em binutils-2.15.90.0.1.1/ld/emultempl/elf32.em
---- binutils-2.15.90.0.1.1.orig/ld/emultempl/elf32.em	2004-01-14 22:07:53.000000000 +0100
-+++ binutils-2.15.90.0.1.1/ld/emultempl/elf32.em	2004-03-17 12:12:08.072321424 +0100
-@@ -1645,6 +1645,16 @@
- 	  link_info.noexecstack = TRUE;
- 	  link_info.execstack = FALSE;
- 	}
+--- binutils-2.15.91.0.1/ld/emultempl/elf32.em.orig	2004-05-27 20:26:05.000000000 +0200
++++ binutils-2.15.91.0.1/ld/emultempl/elf32.em	2004-05-30 02:37:57.317669912 +0200
+@@ -1694,6 +1694,16 @@
+ 	link_info.relro = TRUE;
+       else if (strcmp (optarg, "norelro") == 0)
+ 	link_info.relro = FALSE;
 +      else if (strcmp (optarg, "execheap") == 0)
 +	{
 +	  link_info.execheap = TRUE;
@@ -199,7 +195,7 @@ diff -uNr binutils-2.15.90.0.1.1.orig/ld/emultempl/elf32.em binutils-2.15.90.0.1
        /* What about the other Solaris -z options? FIXME.  */
        break;
  EOF
-@@ -1681,6 +1691,7 @@
+@@ -1730,6 +1740,7 @@
    fprintf (file, _("  -z combreloc\t\tMerge dynamic relocs into one section and sort\n"));
    fprintf (file, _("  -z defs\t\tReport unresolved symbols in object files.\n"));
    fprintf (file, _("  -z execstack\t\tMark executable as requiring executable stack\n"));
@@ -207,14 +203,14 @@ diff -uNr binutils-2.15.90.0.1.1.orig/ld/emultempl/elf32.em binutils-2.15.90.0.1
    fprintf (file, _("  -z initfirst\t\tMark DSO to be initialized first at runtime\n"));
    fprintf (file, _("  -z interpose\t\tMark object to interpose all DSOs but executable\n"));
    fprintf (file, _("  -z loadfltr\t\tMark object requiring immediate process\n"));
-@@ -1692,6 +1703,7 @@
+@@ -1741,6 +1752,7 @@
    fprintf (file, _("  -z nodlopen\t\tMark DSO not available to dlopen\n"));
    fprintf (file, _("  -z nodump\t\tMark DSO not available to dldump\n"));
    fprintf (file, _("  -z noexecstack\tMark executable as not requiring executable stack\n"));
 +  fprintf (file, _("  -z noexecheap\t\tMark executable as not requiring executable heap\n"));
+   fprintf (file, _("  -z norelro\t\tDon't create RELRO program header\n"));
    fprintf (file, _("  -z now\t\tMark object non-lazy runtime binding\n"));
    fprintf (file, _("  -z origin\t\tMark object requiring immediate \$ORIGIN processing\n\t\t\t  at runtime\n"));
-   fprintf (file, _("  -z KEYWORD\t\tIgnored for Solaris compatibility\n"));
 diff -uNr binutils-2.15.90.0.1.1.orig/ld/ldgram.y binutils-2.15.90.0.1.1/ld/ldgram.y
 --- binutils-2.15.90.0.1.1.orig/ld/ldgram.y	2004-03-03 21:24:34.000000000 +0100
 +++ binutils-2.15.90.0.1.1/ld/ldgram.y	2004-03-17 11:51:21.123886400 +0100
