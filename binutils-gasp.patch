@@ -5382,35 +5382,29 @@ diff -Nur binutils-2.13.90.0.18.orig/gas/gasp.c binutils-2.13.90.0.18/gas/gasp.c
 +  fprintf (stderr, _("\nPlease report this bug.\n"));
 +  exit (1);
 +}
-diff -Nur binutils-2.13.90.0.18.orig/gas/macro.c binutils-2.13.90.0.18/gas/macro.c
---- binutils-2.13.90.0.18.orig/gas/macro.c	Sun Feb  2 03:21:18 2003
-+++ binutils-2.13.90.0.18/gas/macro.c	Sun Feb  2 15:19:38 2003
-@@ -75,8 +75,8 @@
- static int sub_actual
-   PARAMS ((int, sb *, sb *, struct hash_control *, int, sb *, int));
+--- binutils-2.14.90.0.8/gas/macro.c.orig	Wed Jan 14 22:07:45 2004
++++ binutils-2.14.90.0.8/gas/macro.c	Thu Jan 15 10:46:06 2004
+@@ -74,8 +74,8 @@
+ static int get_apost_token (int, sb *, sb *, int);
+ static int sub_actual (int, sb *, sb *, struct hash_control *, int, sb *, int);
  static const char *macro_expand_body
--  PARAMS ((sb *, sb *, formal_entry *, struct hash_control *, int));
--static const char *macro_expand PARAMS ((int, sb *, macro_entry *, sb *));
-+  PARAMS ((sb *, sb *, formal_entry *, struct hash_control *, int,int ));
-+static const char *macro_expand PARAMS ((int, sb *, macro_entry *, sb *, int));
+-  (sb *, sb *, formal_entry *, struct hash_control *, int);
+-static const char *macro_expand (int, sb *, macro_entry *, sb *);
++  (sb *, sb *, formal_entry *, struct hash_control *, int, int);
++static const char *macro_expand (int, sb *, macro_entry *, sb *, int);
  
  #define ISWHITE(x) ((x) == ' ' || (x) == '\t')
  
-@@ -653,11 +653,12 @@
- /* Expand the body of a macro.  */
+@@ -619,7 +619,7 @@
  
  static const char *
--macro_expand_body (in, out, formals, formal_hash, locals)
-+macro_expand_body (in, out, formals, formal_hash, comment_char, locals)
-      sb *in;
-      sb *out;
-      formal_entry *formals;
-      struct hash_control *formal_hash;
-+     int comment_char;
-      int locals;
+ macro_expand_body (sb *in, sb *out, formal_entry *formals,
+-		   struct hash_control *formal_hash, int locals)
++		   struct hash_control *formal_hash, int comment_char, int locals)
  {
    sb t;
-@@ -688,7 +689,14 @@
+   int src = 0;
+@@ -649,7 +649,14 @@
        else if (in->ptr[src] == '\\')
  	{
  	  src++;
@@ -5426,7 +5420,7 @@ diff -Nur binutils-2.13.90.0.18.orig/gas/macro.c binutils-2.13.90.0.18/gas/macro
  	    {
  	      /* Sub in till the next ')' literally.  */
  	      src++;
-@@ -771,7 +779,7 @@
+@@ -732,7 +739,7 @@
  	      formal_entry *f;
  
  	      src = sb_skip_white (src + 5, in);
@@ -5435,7 +5429,7 @@ diff -Nur binutils-2.13.90.0.18.orig/gas/macro.c binutils-2.13.90.0.18/gas/macro
  		{
  		  static int loccnt;
  		  char buf[20];
-@@ -798,6 +806,17 @@
+@@ -759,6 +766,17 @@
  		}
  	    }
  	}
@@ -5453,21 +5447,16 @@ diff -Nur binutils-2.13.90.0.18.orig/gas/macro.c binutils-2.13.90.0.18/gas/macro
        else if (in->ptr[src] == '"'
  	       || (macro_mri && in->ptr[src] == '\''))
  	{
-@@ -880,11 +899,12 @@
+@@ -841,7 +859,7 @@
     body.  */
  
  static const char *
--macro_expand (idx, in, m, out)
-+macro_expand (idx, in, m, out, comment_char)
-      int idx;
-      sb *in;
-      macro_entry *m;
-      sb *out;
-+     int comment_char;
+-macro_expand (int idx, sb *in, macro_entry *m, sb *out)
++macro_expand (int idx, sb *in, macro_entry *m, sb *out, int comment_char)
  {
    sb t;
    formal_entry *ptr;
-@@ -934,7 +954,7 @@
+@@ -891,7 +909,7 @@
  
    /* Peel off the actuals and store them away in the hash tables' actuals.  */
    idx = sb_skip_white (idx, in);
@@ -5476,7 +5465,7 @@ diff -Nur binutils-2.13.90.0.18.orig/gas/macro.c binutils-2.13.90.0.18/gas/macro
      {
        int scan;
  
-@@ -1036,7 +1056,7 @@
+@@ -993,7 +1011,7 @@
        sb_add_string (&ptr->actual, buffer);
      }
  
@@ -5485,19 +5474,16 @@ diff -Nur binutils-2.13.90.0.18.orig/gas/macro.c binutils-2.13.90.0.18/gas/macro
    if (err != NULL)
      return err;
  
-@@ -1072,9 +1092,10 @@
+@@ -1029,7 +1047,7 @@
     *EXPAND.  Return 1 if a macro is found, 0 otherwise.  */
  
  int
--check_macro (line, expand, error, info)
-+check_macro (line, expand, comment_char, error, info)
-      const char *line;
-      sb *expand;
-+     int comment_char;
-      const char **error;
-      macro_entry **info;
+-check_macro (const char *line, sb *expand,
++check_macro (const char *line, sb *expand, int comment_char,
+ 	     const char **error, macro_entry **info)
  {
-@@ -1112,7 +1133,7 @@
+   const char *s;
+@@ -1066,7 +1084,7 @@
      sb_add_char (&line_sb, *s++);
  
    sb_new (expand);
@@ -5506,22 +5492,16 @@ diff -Nur binutils-2.13.90.0.18.orig/gas/macro.c binutils-2.13.90.0.18/gas/macro
  
    sb_kill (&line_sb);
  
-@@ -1137,12 +1158,13 @@
+@@ -1090,7 +1108,7 @@
     success, or an error message otherwise.  */
  
  const char *
--expand_irp (irpc, idx, in, out, get_line)
-+expand_irp (irpc, idx, in, out, get_line, comment_char)
-      int irpc;
-      int idx;
-      sb *in;
-      sb *out;
-      int (*get_line) PARAMS ((sb *));
-+     int comment_char;
+-expand_irp (int irpc, int idx, sb *in, sb *out, int (*get_line) (sb *))
++expand_irp (int irpc, int idx, sb *in, sb *out, int (*get_line) (sb *), int comment_char)
  {
    const char *mn;
    sb sub;
-@@ -1180,10 +1202,10 @@
+@@ -1128,10 +1146,10 @@
    sb_reset (out);
  
    idx = sb_skip_comma (idx, in);
@@ -5534,7 +5514,7 @@ diff -Nur binutils-2.13.90.0.18.orig/gas/macro.c binutils-2.13.90.0.18/gas/macro
        if (err != NULL)
  	return err;
      }
-@@ -1191,7 +1213,7 @@
+@@ -1139,7 +1157,7 @@
      {
        if (irpc && in->ptr[idx] == '"')
  	++idx;
@@ -5543,7 +5523,7 @@ diff -Nur binutils-2.13.90.0.18.orig/gas/macro.c binutils-2.13.90.0.18/gas/macro
  	{
  	  if (!irpc)
  	    idx = get_any_string (idx, in, &f.actual, 1, 0);
-@@ -1202,7 +1224,7 @@
+@@ -1150,7 +1168,7 @@
  		  int nxt;
  
  		  nxt = sb_skip_white (idx + 1, in);
@@ -5552,7 +5532,7 @@ diff -Nur binutils-2.13.90.0.18.orig/gas/macro.c binutils-2.13.90.0.18/gas/macro
  		    {
  		      idx = nxt;
  		      break;
-@@ -1212,7 +1234,7 @@
+@@ -1160,7 +1178,7 @@
  	      sb_add_char (&f.actual, in->ptr[idx]);
  	      ++idx;
  	    }
@@ -5561,20 +5541,17 @@ diff -Nur binutils-2.13.90.0.18.orig/gas/macro.c binutils-2.13.90.0.18/gas/macro
  	  if (err != NULL)
  	    return err;
  	  if (!irpc)
-diff -Nur binutils-2.13.90.0.18.orig/gas/macro.h binutils-2.13.90.0.18/gas/macro.h
---- binutils-2.13.90.0.18.orig/gas/macro.h	Sun Feb  2 03:21:18 2003
-+++ binutils-2.13.90.0.18/gas/macro.h	Sun Feb  2 15:23:24 2003
-@@ -79,10 +79,10 @@
+--- binutils-2.14.90.0.8/gas/macro.h.orig	Wed Jan 14 22:07:45 2004
++++ binutils-2.14.90.0.8/gas/macro.h	Thu Jan 15 10:43:32 2004
+@@ -76,8 +76,8 @@
+ extern void macro_mri_mode (int);
  extern const char *define_macro
-   PARAMS ((int, sb *, sb *, int (*) PARAMS ((sb *)), const char **));
- extern int check_macro
--  PARAMS ((const char *, sb *, const char **, macro_entry **));
-+  PARAMS ((const char *, sb *, int, const char **, macro_entry **));
- extern void delete_macro
-   PARAMS ((const char *));
- extern const char *expand_irp
--  PARAMS ((int, int, sb *, sb *, int (*) PARAMS ((sb *))));
-+  PARAMS ((int, int, sb *, sb *, int (*) PARAMS ((sb *)), int));
+   (int, sb *, sb *, int (*) (sb *), const char **);
+-extern int check_macro (const char *, sb *, const char **, macro_entry **);
++extern int check_macro (const char *, sb *, int, const char **, macro_entry **);
+ extern void delete_macro (const char *);
+-extern const char *expand_irp (int, int, sb *, sb *, int (*) (sb *));
++extern const char *expand_irp (int, int, sb *, sb *, int (*) (sb *), int);
  
  #endif
 diff -Nur binutils-2.13.90.0.18.orig/gas/read.c binutils-2.13.90.0.18/gas/read.c
