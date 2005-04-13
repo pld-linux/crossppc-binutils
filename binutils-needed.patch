@@ -1,0 +1,73 @@
+Date: Tue, 12 Apr 2005 00:00:15 +0930
+From: Alan Modra <amodra at bigpond dot net dot au>
+To: binutils at sources dot redhat dot com
+Cc: Anton Blanchard <anton at samba dot org>,
+	Paul Mackerras <paulus at samba dot org>
+Subject: AS_NEEDED failure
+Message-ID: <20050411143015.GB861@bubble.modra.org>
+Mail-Followup-To: binutils at sources dot redhat dot com,
+	Anton Blanchard <anton at samba dot org>, Paul Mackerras <paulus at samba dot org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.4i
+
+On powerpc64, I've hit the following during an X11 server build
+.../libdl.so.2: undefined reference to _rtld_global@GLIBC_PRIVATE
+This symbol is defined in ld64.so.1, and ld64.so.1 is being searched,
+but the following conspires to make the link fail:
+
+- libc.so contains AS_NEEDED (ld64.so.1)
+- one or more of the X11 libs has DT_NEEDED libdl.so.2
+- libdl.so.2 has DT_NEEDED ld64.so.1
+
+The libc.so AS_NEEDED() causes symbols from ld64.so.1 to be loaded, but
+no regular object file needs them so all the ld64.so.1 syms are set back
+to bfd_link_hash_new, effectively removing them.  The X11 lib is loaded,
+and its DT_NEEDED entry noted.  libdl.so.2 is loaded, but ld decides
+that ld64.so.1 has already been looked at, so doesn't load it again.
+It should do, because AS_NEEDED lib symbols aren't really loaded.
+
+	* emultempl/elf32.em (gld${EMULATION_NAME}_stat_needed): Ignore
+	as_needed libs that were not needed.
+	(gld${EMULATION_NAME}_check_needed): Likewise.
+
+Applied mainline.  I think this should go on 2.16, but after some more
+testing..
+
+Index: ld/emultempl/elf32.em
+===================================================================
+RCS file: /cvs/src/src/ld/emultempl/elf32.em,v
+retrieving revision 1.138
+diff -u -p -r1.138 elf32.em
+--- ld/emultempl/elf32.em	4 Apr 2005 11:27:15 -0000	1.138
++++ ld/emultempl/elf32.em	11 Apr 2005 14:23:08 -0000
+@@ -230,6 +230,9 @@ gld${EMULATION_NAME}_stat_needed (lang_i
+     return;
+   if (s->the_bfd == NULL)
+     return;
++  if (s->as_needed
++      && (bfd_elf_get_dyn_lib_class (s->the_bfd) & DYN_AS_NEEDED) != 0)
++    return;
+ 
+   if (bfd_stat (s->the_bfd, &st) != 0)
+     {
+@@ -737,6 +740,13 @@ gld${EMULATION_NAME}_check_needed (lang_
+   if (global_found)
+     return;
+ 
++  /* If this input file was an as-needed entry, and wasn't found to be
++     needed at the stage it was linked, then don't say we have loaded it.  */
++  if (s->as_needed
++      && (s->the_bfd == NULL
++	  || (bfd_elf_get_dyn_lib_class (s->the_bfd) & DYN_AS_NEEDED) != 0))
++    return;
++
+   if (s->filename != NULL)
+     {
+       const char *f;
+
+-- 
+Alan Modra
+IBM OzLabs - Linux Technology Centre
+
