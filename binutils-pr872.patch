@@ -1,0 +1,17 @@
+Index: binutils/objcopy.c
+===================================================================
+RCS file: /cvs/src/src/binutils/objcopy.c,v
+retrieving revision 1.80
+diff -c -3 -p -r1.80 objcopy.c
+*** binutils/objcopy.c	25 Apr 2005 09:25:57 -0000	1.80
+--- binutils/objcopy.c	25 Apr 2005 14:19:06 -0000
+*************** copy_archive (bfd *ibfd, bfd *obfd, cons
+*** 1627,1632 ****
+--- 1627,1633 ----
+        l = xmalloc (sizeof (struct name_list));
+        l->name = output_name;
+        l->next = list;
++       l->obfd = NULL;
+        list = l;
+  
+        if (output_bfd == NULL)
