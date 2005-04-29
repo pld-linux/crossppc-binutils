@@ -19,7 +19,6 @@ BuildRequires:	automake
 BuildRequires:	bash
 BuildRequires:	bison
 BuildRequires:	flex
-BuildRequires:	gettext-devel
 %ifarch sparc sparc32
 BuildRequires:	sparc32
 %endif
@@ -72,10 +71,12 @@ sparc32 \
 %endif
 ./configure \
 	--disable-shared \
+	--disable-nls \
 	--prefix=%{_prefix} \
 	--libdir=%{_libdir} \
 	--mandir=%{_mandir} \
 	--infodir=%{_infodir} \
+	--enable-64-bit-bfd \
 	--target=%{target}
 
 %{__make} all \
