@@ -1512,10 +1512,9 @@ diff -Nur binutils-2.14.90.0.7.orig/gas/doc/gasp.texinfo binutils-2.14.90.0.7/ga
 +
 +@contents
 +@bye
-diff -Nur binutils-2.13.90.0.18.orig/gas/gasp.c binutils-2.13.90.0.18/gas/gasp.c
---- binutils-2.13.90.0.18.orig/gas/gasp.c	Thu Jan  1 01:00:00 1970
-+++ binutils-2.13.90.0.18/gas/gasp.c	Sun May 26 18:57:12 2002
-@@ -0,0 +1,3761 @@
+--- binutils-2.16.90.0.2/gas/gasp.c.orig	1970-01-01 01:00:00.000000000 +0100
++++ binutils-2.16.90.0.2/gas/gasp.c	2005-05-02 15:44:26.244061608 +0200
+@@ -0,0 +1,3938 @@
 +/* gasp.c - Gnu assembler preprocessor main program.
 +   Copyright 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002
 +   Free Software Foundation, Inc.
@@ -1833,6 +1832,48 @@ diff -Nur binutils-2.13.90.0.18.orig/gas/gasp.c binutils-2.13.90.0.18/gas/gasp.c
 +static void show_usage PARAMS ((FILE *, int));
 +static void show_help PARAMS ((void));
 +
++/* --- functions recently removed from sb.c --- */
++
++/* put a null at the end of the sb at in and return the start of the
++ *    string, so that it can be used as an arg to printf %s.  */
++
++static char *
++sb_name (sb *in)
++{
++  /* stick a null on the end of the string */
++  sb_add_char (in, 0);
++  return in->ptr;
++}
++
++/* print the sb at ptr to the output file */
++
++static void
++sb_print (FILE *outfile, sb *ptr)
++{
++  int i;
++  int nc = 0;
++
++  for (i = 0; i < ptr->len; i++)
++    {
++      if (nc)
++	{
++	  fprintf (outfile, ",");
++	}
++      fprintf (outfile, "%d", ptr->ptr[i]);
++      nc = 1;
++    }
++}
++
++/* print the sb at ptr to the output file */
++
++static void
++sb_print_at (FILE *outfile, int idx, sb *ptr)
++{
++  int i;
++  for (i = idx; i < ptr->len; i++)
++    putc (ptr->ptr[i], outfile);
++}
++
 +#define FATAL(x)				\
 +  do						\
 +    {						\
@@ -1872,15 +1913,6 @@ diff -Nur binutils-2.13.90.0.18.orig/gas/gasp.c binutils-2.13.90.0.18/gas/gasp.c
 +  else
 +    exitcode = 0;
 +
-+  if (stats)
-+    {
-+      int i;
-+      for (i = 0; i < sb_max_power_two; i++)
-+	{
-+	  fprintf (stderr, "strings size %8d : %d\n",
-+		   1 << i, string_count[i]);
-+	}
-+    }
 +  exit (exitcode);
 +}
 +
@@ -4198,7 +4230,7 @@ diff -Nur binutils-2.13.90.0.18.orig/gas/gasp.c binutils-2.13.90.0.18/gas/gasp.c
 +  const char *err;
 +  int line = linecount ();
 +
-+  err = define_macro (idx, in, &label, get_line, (const char **) NULL);
++  err = define_macro (idx, in, &label, get_line, "[gasp]", line, (const char **) NULL);
 +  if (err != NULL)
 +    ERROR ((stderr, _("macro at line %d: %s\n"), line - 1, err));
 +}
@@ -5277,33 +5309,177 @@ diff -Nur binutils-2.13.90.0.18.orig/gas/gasp.c binutils-2.13.90.0.18/gas/gasp.c
 +  fprintf (stderr, _("\nPlease report this bug.\n"));
 +  exit (1);
 +}
---- binutils-2.14.90.0.8/gas/macro.c.orig	Wed Jan 14 22:07:45 2004
-+++ binutils-2.14.90.0.8/gas/macro.c	Thu Jan 15 10:46:06 2004
-@@ -74,8 +74,8 @@
++
++/* duplicated from as internals */
++
++static void
++identify (char *file)
++{
++  static int identified;
++
++  if (identified)
++    return;
++  identified++;
++
++  if (file)
++    fprintf (stderr, "%s: ", file);
++  fprintf (stderr, _("Assembler messages:\n"));
++}
++
++/* The number of warnings issued.  */
++static int warning_count;
++
++/* The common portion of as_warn and as_warn_where.  */
++
++static void
++as_warn_internal (char *file, unsigned int line, char *buffer)
++{
++  ++warning_count;
++
++  identify (file);
++  if (file)
++    fprintf (stderr, "%s:%u: ", file, line);
++  fprintf (stderr, _("Warning: "));
++  fputs (buffer, stderr);
++  (void) putc ('\n', stderr);
++}
++
++/* Send to stderr a string as a warning, and locate warning
++   in input file(s).
++   Please only use this for when we have some recovery action.
++   Please explain in string (which may have '\n's) what recovery was
++   done.  */
++
++void
++as_warn (const char *format, ...)
++{
++  va_list args;
++  char buffer[2000];
++
++  if (1 /*!flag_no_warnings*/)
++    {
++      va_start (args, format);
++      vsprintf (buffer, format, args);
++      va_end (args);
++      as_warn_internal ((char *) NULL, 0, buffer);
++    }
++}
++
++/* Nonzero if we've hit a 'bad error', and should not write an obj file,
++   and exit with a nonzero error code.  */
++
++static int error_count;
++
++/* The common portion of as_bad and as_bad_where.  */
++
++static void
++as_bad_internal (char *file, unsigned int line, char *buffer)
++{
++  ++error_count;
++
++  identify (file);
++  if (file)
++    fprintf (stderr, "%s:%u: ", file, line);
++  fprintf (stderr, _("Error: "));
++  fputs (buffer, stderr);
++  (void) putc ('\n', stderr);
++}
++
++void
++as_bad_where (char *file, unsigned int line, const char *format, ...)
++{
++  va_list args;
++  char buffer[2000];
++
++  va_start (args, format);
++  vsprintf (buffer, format, args);
++  va_end (args);
++
++  as_bad_internal (file, line, buffer);
++}
++
++#ifndef LEX_AT
++/* The m88k unfortunately uses @ as a label beginner.  */
++#define LEX_AT 0
++#endif
++
++#ifndef LEX_BR
++/* The RS/6000 assembler uses {,},[,] as parts of symbol names.  */
++#define LEX_BR 0
++#endif
++
++#ifndef LEX_PCT
++/* The Delta 68k assembler permits % inside label names.  */
++#define LEX_PCT 0
++#endif
++
++#ifndef LEX_QM
++/* The PowerPC Windows NT assemblers permits ? inside label names.  */
++#define LEX_QM 0
++#endif
++
++#ifndef LEX_HASH
++/* The IA-64 assembler uses # as a suffix designating a symbol.  We include
++   it in the symbol and strip it out in tc_canonicalize_symbol_name.  */
++#define LEX_HASH 0
++#endif
++
++#ifndef LEX_DOLLAR
++/* The a29k assembler does not permits labels to start with $.  */
++#define LEX_DOLLAR 3
++#endif
++
++#ifndef LEX_TILDE
++/* The Delta 68k assembler permits ~ at start of label names.  */
++#define LEX_TILDE 0
++#endif
++
++/* Used by is_... macros. our ctype[].  */
++char lex_type[256] = {
++  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,	/* @ABCDEFGHIJKLMNO */
++  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,	/* PQRSTUVWXYZ[\]^_ */
++  0, 0, 0, LEX_HASH, LEX_DOLLAR, LEX_PCT, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, /* _!"#$%&'()*+,-./ */
++  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, LEX_QM,	/* 0123456789:;<=>? */
++  LEX_AT, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,	/* @ABCDEFGHIJKLMNO */
++  3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, LEX_BR, 0, LEX_BR, 0, 3, /* PQRSTUVWXYZ[\]^_ */
++  0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,	/* `abcdefghijklmno */
++  3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, LEX_BR, 0, LEX_BR, LEX_TILDE, 0, /* pqrstuvwxyz{|}~.  */
++  3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
++  3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
++  3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
++  3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
++  3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
++  3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
++  3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
++  3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3
++};
+--- binutils-2.16.90.0.2/gas/macro.c.orig	2005-04-29 19:50:28.000000000 +0200
++++ binutils-2.16.90.0.2/gas/macro.c	2005-05-02 11:05:17.656233976 +0200
+@@ -75,8 +75,8 @@
  static int get_apost_token (int, sb *, sb *, int);
  static int sub_actual (int, sb *, sb *, struct hash_control *, int, sb *, int);
  static const char *macro_expand_body
--  (sb *, sb *, formal_entry *, struct hash_control *, int);
+-  (sb *, sb *, formal_entry *, struct hash_control *, const macro_entry *);
 -static const char *macro_expand (int, sb *, macro_entry *, sb *);
-+  (sb *, sb *, formal_entry *, struct hash_control *, int, int);
++  (sb *, sb *, formal_entry *, struct hash_control *, const macro_entry *, int);
 +static const char *macro_expand (int, sb *, macro_entry *, sb *, int);
+ static void free_macro(macro_entry *);
  
  #define ISWHITE(x) ((x) == ' ' || (x) == '\t')
- 
-@@ -619,7 +619,7 @@
+@@ -711,7 +711,7 @@
  
  static const char *
  macro_expand_body (sb *in, sb *out, formal_entry *formals,
--		   struct hash_control *formal_hash, int locals)
-+		   struct hash_control *formal_hash, int comment_char, int locals)
+-		   struct hash_control *formal_hash, const macro_entry *macro)
++		   struct hash_control *formal_hash, const macro_entry *macro, int comment_char)
  {
    sb t;
-   int src = 0;
-@@ -649,7 +649,14 @@
+   int src = 0, inquote = 0, macro_line = 0;
+@@ -743,7 +743,14 @@
        else if (in->ptr[src] == '\\')
  	{
  	  src++;
--	  if (in->ptr[src] == '(')
+-	  if (src < in->len && in->ptr[src] == '(')
 +	  if (in->ptr[src] == comment_char && comment_char != '\0')
 +	    {
 +	      /* This is a comment, just drop the rest of the line.  */
@@ -5311,20 +5487,20 @@ diff -Nur binutils-2.13.90.0.18.orig/gas/gasp.c binutils-2.13.90.0.18/gas/gasp.c
 +	             && in->ptr[src] != '\n')
 +	        src++;
 +	    }
-+	  else if (in->ptr[src] == '(')
++	  else if (src < in->len && in->ptr[src] == '(')
  	    {
  	      /* Sub in till the next ')' literally.  */
  	      src++;
-@@ -732,7 +739,7 @@
- 	      formal_entry *f;
- 
+@@ -824,7 +831,7 @@
+ 	  else
+ 	    {
  	      src = sb_skip_white (src + 5, in);
 -	      while (in->ptr[src] != '\n')
 +	      while (in->ptr[src] != '\n' && in->ptr[src] != comment_char)
  		{
- 		  static int loccnt;
- 		  char buf[20];
-@@ -759,6 +766,17 @@
+ 		  const char *name;
+ 		  formal_entry *f;
+@@ -865,6 +872,17 @@
  		}
  	    }
  	}
@@ -5342,7 +5518,7 @@ diff -Nur binutils-2.13.90.0.18.orig/gas/gasp.c binutils-2.13.90.0.18/gas/gasp.c
        else if (in->ptr[src] == '"'
  	       || (macro_mri && in->ptr[src] == '\''))
  	{
-@@ -841,7 +859,7 @@
+@@ -949,7 +967,7 @@
     body.  */
  
  static const char *
@@ -5351,7 +5527,7 @@ diff -Nur binutils-2.13.90.0.18.orig/gas/gasp.c binutils-2.13.90.0.18/gas/gasp.c
  {
    sb t;
    formal_entry *ptr;
-@@ -891,7 +909,7 @@
+@@ -999,7 +1017,7 @@
  
    /* Peel off the actuals and store them away in the hash tables' actuals.  */
    idx = sb_skip_white (idx, in);
@@ -5360,16 +5536,16 @@ diff -Nur binutils-2.13.90.0.18.orig/gas/gasp.c binutils-2.13.90.0.18/gas/gasp.c
      {
        int scan;
  
-@@ -993,7 +1011,7 @@
+@@ -1101,7 +1119,7 @@
        sb_add_string (&ptr->actual, buffer);
      }
  
--  err = macro_expand_body (&m->sub, out, m->formals, m->formal_hash, 1);
-+  err = macro_expand_body (&m->sub, out, m->formals, m->formal_hash, comment_char, 1);
-   if (err != NULL)
-     return err;
+-  err = macro_expand_body (&m->sub, out, m->formals, m->formal_hash, m);
++  err = macro_expand_body (&m->sub, out, m->formals, m->formal_hash, m, comment_char);
  
-@@ -1029,7 +1047,7 @@
+   /* Discard any unnamed formal arguments.  */
+   if (macro_mri)
+@@ -1136,7 +1154,7 @@
     *EXPAND.  Return 1 if a macro is found, 0 otherwise.  */
  
  int
@@ -5378,7 +5554,7 @@ diff -Nur binutils-2.13.90.0.18.orig/gas/gasp.c binutils-2.13.90.0.18/gas/gasp.c
  	     const char **error, macro_entry **info)
  {
    const char *s;
-@@ -1066,7 +1084,7 @@
+@@ -1171,7 +1189,7 @@
      sb_add_char (&line_sb, *s++);
  
    sb_new (expand);
@@ -5387,16 +5563,16 @@ diff -Nur binutils-2.13.90.0.18.orig/gas/gasp.c binutils-2.13.90.0.18/gas/gasp.c
  
    sb_kill (&line_sb);
  
-@@ -1090,7 +1108,7 @@
+@@ -1235,7 +1253,7 @@
     success, or an error message otherwise.  */
  
  const char *
 -expand_irp (int irpc, int idx, sb *in, sb *out, int (*get_line) (sb *))
 +expand_irp (int irpc, int idx, sb *in, sb *out, int (*get_line) (sb *), int comment_char)
  {
-   const char *mn;
    sb sub;
-@@ -1128,10 +1146,10 @@
+   formal_entry f;
+@@ -1267,16 +1285,16 @@
    sb_reset (out);
  
    idx = sb_skip_comma (idx, in);
@@ -5405,11 +5581,9 @@ diff -Nur binutils-2.13.90.0.18.orig/gas/gasp.c binutils-2.13.90.0.18/gas/gasp.c
      {
        /* Expand once with a null string.  */
 -      err = macro_expand_body (&sub, out, &f, h, 0);
-+      err = macro_expand_body (&sub, out, &f, h, comment_char, 0);
-       if (err != NULL)
- 	return err;
++      err = macro_expand_body (&sub, out, &f, h, 0, comment_char);
      }
-@@ -1139,7 +1157,7 @@
+   else
      {
        if (irpc && in->ptr[idx] == '"')
  	++idx;
@@ -5418,7 +5592,7 @@ diff -Nur binutils-2.13.90.0.18.orig/gas/gasp.c binutils-2.13.90.0.18/gas/gasp.c
  	{
  	  if (!irpc)
  	    idx = get_any_string (idx, in, &f.actual, 1, 0);
-@@ -1150,7 +1168,7 @@
+@@ -1287,7 +1305,7 @@
  		  int nxt;
  
  		  nxt = sb_skip_white (idx + 1, in);
@@ -5427,21 +5601,21 @@ diff -Nur binutils-2.13.90.0.18.orig/gas/gasp.c binutils-2.13.90.0.18/gas/gasp.c
  		    {
  		      idx = nxt;
  		      break;
-@@ -1160,7 +1178,7 @@
+@@ -1297,7 +1315,7 @@
  	      sb_add_char (&f.actual, in->ptr[idx]);
  	      ++idx;
  	    }
 -	  err = macro_expand_body (&sub, out, &f, h, 0);
-+	  err = macro_expand_body (&sub, out, &f, h, comment_char, 0);
++	  err = macro_expand_body (&sub, out, &f, h, 0, comment_char);
  	  if (err != NULL)
- 	    return err;
+ 	    break;
  	  if (!irpc)
---- binutils-2.14.90.0.8/gas/macro.h.orig	Wed Jan 14 22:07:45 2004
-+++ binutils-2.14.90.0.8/gas/macro.h	Thu Jan 15 10:43:32 2004
-@@ -76,8 +76,8 @@
+--- binutils-2.16.90.0.2/gas/macro.h.orig	2005-04-29 19:50:28.000000000 +0200
++++ binutils-2.16.90.0.2/gas/macro.h	2005-05-02 11:06:23.979151360 +0200
+@@ -80,8 +80,8 @@
  extern void macro_mri_mode (int);
  extern const char *define_macro
-   (int, sb *, sb *, int (*) (sb *), const char **);
+   (int, sb *, sb *, int (*) (sb *), char *, unsigned int, const char **);
 -extern int check_macro (const char *, sb *, const char **, macro_entry **);
 +extern int check_macro (const char *, sb *, int, const char **, macro_entry **);
  extern void delete_macro (const char *);
@@ -5449,19 +5623,18 @@ diff -Nur binutils-2.13.90.0.18.orig/gas/gasp.c binutils-2.13.90.0.18/gas/gasp.c
 +extern const char *expand_irp (int, int, sb *, sb *, int (*) (sb *), int);
  
  #endif
-diff -Nur binutils-2.13.90.0.18.orig/gas/read.c binutils-2.13.90.0.18/gas/read.c
---- binutils-2.13.90.0.18.orig/gas/read.c	Sun Feb  2 03:21:18 2003
-+++ binutils-2.13.90.0.18/gas/read.c	Sun Feb  2 15:26:06 2003
-@@ -862,7 +862,7 @@
- 			  const char *err;
- 			  macro_entry *macro;
+--- binutils-2.16.90.0.2/gas/read.c.orig	2005-04-29 19:50:28.000000000 +0200
++++ binutils-2.16.90.0.2/gas/read.c	2005-05-02 11:06:53.579651400 +0200
+@@ -550,7 +550,7 @@
+   const char *err;
+   macro_entry *macro;
  
--			  if (check_macro (s, &out, &err, &macro))
-+			  if (check_macro (s, &out, '\0', &err, &macro))
- 			    {
- 			      if (err != NULL)
- 				as_bad ("%s", err);
-@@ -1855,7 +1855,7 @@
+-  if (check_macro (line, &out, &err, &macro))
++  if (check_macro (line, &out, '\0', &err, &macro))
+     {
+       if (err != NULL)
+ 	as_bad ("%s", err);
+@@ -1978,7 +1978,7 @@
  
    sb_new (&out);
  
@@ -5470,3 +5643,32 @@ diff -Nur binutils-2.13.90.0.18.orig/gas/read.c binutils-2.13.90.0.18/gas/read.c
    if (err != NULL)
      as_bad_where (file, line, "%s", err);
  
+--- binutils-2.16.90.0.2/gas/sb.h.orig	2005-04-29 19:50:28.000000000 +0200
++++ binutils-2.16.90.0.2/gas/sb.h	2005-05-02 15:10:35.689752784 +0200
+@@ -82,6 +82,7 @@
+ extern void sb_reset (sb *);
+ extern void sb_add_char (sb *, int);
+ extern void sb_add_string (sb *, const char *);
++extern void sb_add_buffer (sb *, const char *, int);
+ extern char *sb_terminate (sb *);
+ extern int sb_skip_white (int, sb *);
+ extern int sb_skip_comma (int, sb *);
+--- binutils-2.16.90.0.2/gas/sb.c.orig	2005-04-29 19:50:28.000000000 +0200
++++ binutils-2.16.90.0.2/gas/sb.c	2005-05-02 15:10:16.240709488 +0200
+@@ -165,6 +165,16 @@
+   ptr->len += len;
+ }
+ 
++/* add string at s of length len to sb at ptr */
++
++void
++sb_add_buffer (sb *ptr, const char *s, int len)
++{
++  sb_check (ptr, len);
++  memcpy (ptr->ptr + ptr->len, s, len);
++  ptr->len += len;
++}
++
+ /* like sb_name, but don't include the null byte in the string.  */
+ 
+ char *
