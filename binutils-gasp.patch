@@ -1512,9 +1512,9 @@ diff -Nur binutils-2.14.90.0.7.orig/gas/doc/gasp.texinfo binutils-2.14.90.0.7/ga
 +
 +@contents
 +@bye
---- binutils-2.16.90.0.2/gas/gasp.c.orig	1970-01-01 01:00:00.000000000 +0100
-+++ binutils-2.16.90.0.2/gas/gasp.c	2005-05-02 15:44:26.244061608 +0200
-@@ -0,0 +1,3938 @@
+--- binutils-2.16.90.0.3/gas/gasp.c.orig	1970-01-01 01:00:00.000000000 +0100
++++ binutils-2.16.90.0.3/gas/gasp.c	2005-05-12 00:24:19.559668480 +0200
+@@ -0,0 +1,3980 @@
 +/* gasp.c - Gnu assembler preprocessor main program.
 +   Copyright 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002
 +   Free Software Foundation, Inc.
@@ -5365,6 +5365,25 @@ diff -Nur binutils-2.14.90.0.7.orig/gas/doc/gasp.texinfo binutils-2.14.90.0.7/ga
 +    }
 +}
 +
++/* Like as_bad but the file name and line number are passed in.
++   Unfortunately, we have to repeat the function in order to handle
++   the varargs correctly and portably.  */
++
++void
++as_warn_where (char *file, unsigned int line, const char *format, ...)
++{
++  va_list args;
++  char buffer[2000];
++
++  if (1 /*!flag_no_warnings*/)
++    {
++      va_start (args, format);
++      vsprintf (buffer, format, args);
++      va_end (args);
++      as_warn_internal (file, line, buffer);
++    }
++}
++
 +/* Nonzero if we've hit a 'bad error', and should not write an obj file,
 +   and exit with a nonzero error code.  */
 +
@@ -5384,6 +5403,29 @@ diff -Nur binutils-2.14.90.0.7.orig/gas/doc/gasp.texinfo binutils-2.14.90.0.7/ga
 +  fputs (buffer, stderr);
 +  (void) putc ('\n', stderr);
 +}
++
++/* Send to stderr a string as a warning, and locate warning in input
++   file(s).  Please us when there is no recovery, but we want to
++   continue processing but not produce an object file.
++   Please explain in string (which may have '\n's) what recovery was
++   done.  */
++
++void
++as_bad (const char *format, ...)
++{
++  va_list args;
++  char buffer[2000];
++
++  va_start (args, format);
++  vsprintf (buffer, format, args);
++  va_end (args);
++
++  as_bad_internal ((char *) NULL, 0, buffer);
++}
++
++/* Like as_bad but the file name and line number are passed in.
++   Unfortunately, we have to repeat the function in order to handle
++   the varargs correctly and portably.  */
 +
 +void
 +as_bad_where (char *file, unsigned int line, const char *format, ...)
@@ -5453,9 +5495,9 @@ diff -Nur binutils-2.14.90.0.7.orig/gas/doc/gasp.texinfo binutils-2.14.90.0.7/ga
 +  3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
 +  3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3
 +};
---- binutils-2.16.90.0.2/gas/macro.c.orig	2005-04-29 19:50:28.000000000 +0200
-+++ binutils-2.16.90.0.2/gas/macro.c	2005-05-02 11:05:17.656233976 +0200
-@@ -75,8 +75,8 @@
+--- binutils-2.16.90.0.3/gas/macro.c.orig	2005-05-11 00:46:44.000000000 +0200
++++ binutils-2.16.90.0.3/gas/macro.c	2005-05-12 00:09:50.205830352 +0200
+@@ -77,8 +77,8 @@
  static int get_apost_token (int, sb *, sb *, int);
  static int sub_actual (int, sb *, sb *, struct hash_control *, int, sb *, int);
  static const char *macro_expand_body
@@ -5466,7 +5508,7 @@ diff -Nur binutils-2.14.90.0.7.orig/gas/doc/gasp.texinfo binutils-2.14.90.0.7/ga
  static void free_macro(macro_entry *);
  
  #define ISWHITE(x) ((x) == ' ' || (x) == '\t')
-@@ -711,7 +711,7 @@
+@@ -762,7 +762,7 @@
  
  static const char *
  macro_expand_body (sb *in, sb *out, formal_entry *formals,
@@ -5475,7 +5517,7 @@ diff -Nur binutils-2.14.90.0.7.orig/gas/doc/gasp.texinfo binutils-2.14.90.0.7/ga
  {
    sb t;
    int src = 0, inquote = 0, macro_line = 0;
-@@ -743,7 +743,14 @@
+@@ -794,7 +794,14 @@
        else if (in->ptr[src] == '\\')
  	{
  	  src++;
@@ -5491,7 +5533,7 @@ diff -Nur binutils-2.14.90.0.7.orig/gas/doc/gasp.texinfo binutils-2.14.90.0.7/ga
  	    {
  	      /* Sub in till the next ')' literally.  */
  	      src++;
-@@ -824,7 +831,7 @@
+@@ -875,7 +882,7 @@
  	  else
  	    {
  	      src = sb_skip_white (src + 5, in);
@@ -5499,8 +5541,8 @@ diff -Nur binutils-2.14.90.0.7.orig/gas/doc/gasp.texinfo binutils-2.14.90.0.7/ga
 +	      while (in->ptr[src] != '\n' && in->ptr[src] != comment_char)
  		{
  		  const char *name;
- 		  formal_entry *f;
-@@ -865,6 +872,17 @@
+ 		  formal_entry *f = new_formal ();
+@@ -911,6 +918,17 @@
  		}
  	    }
  	}
@@ -5518,7 +5560,7 @@ diff -Nur binutils-2.14.90.0.7.orig/gas/doc/gasp.texinfo binutils-2.14.90.0.7/ga
        else if (in->ptr[src] == '"'
  	       || (macro_mri && in->ptr[src] == '\''))
  	{
-@@ -949,7 +967,7 @@
+@@ -992,7 +1010,7 @@
     body.  */
  
  static const char *
@@ -5527,7 +5569,7 @@ diff -Nur binutils-2.14.90.0.7.orig/gas/doc/gasp.texinfo binutils-2.14.90.0.7/ga
  {
    sb t;
    formal_entry *ptr;
-@@ -999,7 +1017,7 @@
+@@ -1038,7 +1056,7 @@
  
    /* Peel off the actuals and store them away in the hash tables' actuals.  */
    idx = sb_skip_white (idx, in);
@@ -5536,16 +5578,16 @@ diff -Nur binutils-2.14.90.0.7.orig/gas/doc/gasp.texinfo binutils-2.14.90.0.7/ga
      {
        int scan;
  
-@@ -1101,7 +1119,7 @@
-       sb_add_string (&ptr->actual, buffer);
+@@ -1167,7 +1185,7 @@
+ 	  sb_add_string (&ptr->actual, buffer);
+ 	}
+ 
+-      err = macro_expand_body (&m->sub, out, m->formals, m->formal_hash, m);
++      err = macro_expand_body (&m->sub, out, m->formals, m->formal_hash, m, comment_char);
      }
  
--  err = macro_expand_body (&m->sub, out, m->formals, m->formal_hash, m);
-+  err = macro_expand_body (&m->sub, out, m->formals, m->formal_hash, m, comment_char);
- 
    /* Discard any unnamed formal arguments.  */
-   if (macro_mri)
-@@ -1136,7 +1154,7 @@
+@@ -1200,7 +1218,7 @@
     *EXPAND.  Return 1 if a macro is found, 0 otherwise.  */
  
  int
@@ -5554,7 +5596,7 @@ diff -Nur binutils-2.14.90.0.7.orig/gas/doc/gasp.texinfo binutils-2.14.90.0.7/ga
  	     const char **error, macro_entry **info)
  {
    const char *s;
-@@ -1171,7 +1189,7 @@
+@@ -1235,7 +1253,7 @@
      sb_add_char (&line_sb, *s++);
  
    sb_new (expand);
@@ -5563,7 +5605,7 @@ diff -Nur binutils-2.14.90.0.7.orig/gas/doc/gasp.texinfo binutils-2.14.90.0.7/ga
  
    sb_kill (&line_sb);
  
-@@ -1235,7 +1253,7 @@
+@@ -1296,7 +1314,7 @@
     success, or an error message otherwise.  */
  
  const char *
@@ -5572,7 +5614,7 @@ diff -Nur binutils-2.14.90.0.7.orig/gas/doc/gasp.texinfo binutils-2.14.90.0.7/ga
  {
    sb sub;
    formal_entry f;
-@@ -1267,16 +1285,16 @@
+@@ -1329,16 +1347,16 @@
    sb_reset (out);
  
    idx = sb_skip_comma (idx, in);
@@ -5591,8 +5633,8 @@ diff -Nur binutils-2.14.90.0.7.orig/gas/doc/gasp.texinfo binutils-2.14.90.0.7/ga
 +      while (idx < in->len && in->ptr[idx] != comment_char)
  	{
  	  if (!irpc)
- 	    idx = get_any_string (idx, in, &f.actual, 1, 0);
-@@ -1287,7 +1305,7 @@
+ 	    idx = get_any_string (idx, in, &f.actual);
+@@ -1349,7 +1367,7 @@
  		  int nxt;
  
  		  nxt = sb_skip_white (idx + 1, in);
@@ -5601,7 +5643,7 @@ diff -Nur binutils-2.14.90.0.7.orig/gas/doc/gasp.texinfo binutils-2.14.90.0.7/ga
  		    {
  		      idx = nxt;
  		      break;
-@@ -1297,7 +1315,7 @@
+@@ -1359,7 +1377,7 @@
  	      sb_add_char (&f.actual, in->ptr[idx]);
  	      ++idx;
  	    }
@@ -5643,32 +5685,3 @@ diff -Nur binutils-2.14.90.0.7.orig/gas/doc/gasp.texinfo binutils-2.14.90.0.7/ga
    if (err != NULL)
      as_bad_where (file, line, "%s", err);
  
---- binutils-2.16.90.0.2/gas/sb.h.orig	2005-04-29 19:50:28.000000000 +0200
-+++ binutils-2.16.90.0.2/gas/sb.h	2005-05-02 15:10:35.689752784 +0200
-@@ -82,6 +82,7 @@
- extern void sb_reset (sb *);
- extern void sb_add_char (sb *, int);
- extern void sb_add_string (sb *, const char *);
-+extern void sb_add_buffer (sb *, const char *, int);
- extern char *sb_terminate (sb *);
- extern int sb_skip_white (int, sb *);
- extern int sb_skip_comma (int, sb *);
---- binutils-2.16.90.0.2/gas/sb.c.orig	2005-04-29 19:50:28.000000000 +0200
-+++ binutils-2.16.90.0.2/gas/sb.c	2005-05-02 15:10:16.240709488 +0200
-@@ -165,6 +165,16 @@
-   ptr->len += len;
- }
- 
-+/* add string at s of length len to sb at ptr */
-+
-+void
-+sb_add_buffer (sb *ptr, const char *s, int len)
-+{
-+  sb_check (ptr, len);
-+  memcpy (ptr->ptr + ptr->len, s, len);
-+  ptr->len += len;
-+}
-+
- /* like sb_name, but don't include the null byte in the string.  */
- 
- char *
