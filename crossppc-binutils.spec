@@ -6,7 +6,7 @@ Summary(pt_BR):	Utilitários para desenvolvimento de binários da GNU - PPC binuti
 Summary(tr):	GNU geliþtirme araçlarý - PPC binutils
 Name:		crossppc-binutils
 Version:	2.16.91.0.3
-Release:	1
+Release:	2
 License:	GPL
 Group:		Development/Tools
 Source0:	ftp://ftp.kernel.org/pub/linux/devel/binutils/binutils-%{version}.tar.bz2
@@ -56,7 +56,7 @@ Ten pakiet zawiera wersjê skro¶n± generuj±c± kod dla PPC.
 cp /usr/share/automake/config.sub .
 
 # ldscripts won't be generated properly if SHELL is not bash...
-CFLAGS="%{rpmcflags}" \
+CFLAGS="%{rpmcflags} -fno-strict-aliasing" \
 LDFLAGS="%{rpmldflags}" \
 CONFIG_SHELL="/bin/bash" \
 %ifarch sparc
