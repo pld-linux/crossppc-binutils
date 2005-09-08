@@ -5,18 +5,17 @@ Summary(pl):	Skro¶ne narzêdzia programistyczne GNU dla PPC - binutils
 Summary(pt_BR):	Utilitários para desenvolvimento de binários da GNU - PPC binutils
 Summary(tr):	GNU geliþtirme araçlarý - PPC binutils
 Name:		crossppc-binutils
-Version:	2.15.94.0.2
-Release:	1
+Version:	2.16.91.0.3
+Release:	2
 License:	GPL
 Group:		Development/Tools
 Source0:	ftp://ftp.kernel.org/pub/linux/devel/binutils/binutils-%{version}.tar.bz2
-# Source0-md5:	a87269da4db684da403014b43ec0b89e
+# Source0-md5:	c737a5787927f60758b4960f10e44f93
 URL:		http://sources.redhat.com/binutils/
 BuildRequires:	automake
 BuildRequires:	bash
 BuildRequires:	bison
 BuildRequires:	flex
-BuildRequires:	gettext-devel
 %ifarch sparc sparc32
 BuildRequires:	sparc32
 %endif
@@ -57,7 +56,7 @@ Ten pakiet zawiera wersjê skro¶n± generuj±c± kod dla PPC.
 cp /usr/share/automake/config.sub .
 
 # ldscripts won't be generated properly if SHELL is not bash...
-CFLAGS="%{rpmcflags}" \
+CFLAGS="%{rpmcflags} -fno-strict-aliasing" \
 LDFLAGS="%{rpmldflags}" \
 CONFIG_SHELL="/bin/bash" \
 %ifarch sparc
@@ -65,10 +64,12 @@ sparc32 \
 %endif
 ./configure \
 	--disable-shared \
+	--disable-nls \
 	--prefix=%{_prefix} \
 	--libdir=%{_libdir} \
 	--mandir=%{_mandir} \
 	--infodir=%{_infodir} \
+	--enable-64-bit-bfd \
 	--target=%{target}
 
 %{__make} all \
