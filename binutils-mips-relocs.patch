@@ -101,62 +101,27 @@ diff -u -r1.2114 ChangeLog
 +	(tc_gen_reloc): Put back pc rel handling.
 +	* config/tc-mips.h: Defines DIFF_EXPR_OK.
 +
-Index: gas/config/tc-mips.c
-===================================================================
-RCS file: /cvsroot/gcc/src-cvs/src/gas/config/tc-mips.c,v
-retrieving revision 1.263
-diff -u -r1.263 tc-mips.c
---- gas/config/tc-mips.c.orig	2004-11-22 21:33:32.000000000 +0100
-+++ gas/config/tc-mips.c	2004-11-23 23:59:24.000000000 +0100
-@@ -10932,8 +10932,6 @@
+--- gas/config/tc-mips.c.orig	2005-12-20 23:43:56.000000000 +0100
++++ gas/config/tc-mips.c	2005-12-21 22:47:56.000000000 +0100
+@@ -11401,8 +11401,6 @@
  
    buf = (bfd_byte *) (fixP->fx_frag->fr_literal + fixP->fx_where);
  
--  assert (! fixP->fx_pcrel);
+-  assert (! fixP->fx_pcrel || fixP->fx_r_type == BFD_RELOC_16_PCREL_S2);
 -
    /* Don't treat parts of a composite relocation as done.  There are two
       reasons for this:
  
-@@ -10944,7 +10942,7 @@
- 	 constants.  The easiest way of dealing with the pathological
- 	 exceptions is to generate a relocation against STN_UNDEF and
- 	 leave everything up to the linker.  */
--  if (fixP->fx_addsy == NULL && fixP->fx_tcbit == 0)
-+  if (fixP->fx_addsy == NULL && (! fixP->fx_pcrel) && fixP->fx_tcbit == 0)
-     fixP->fx_done = 1;
+@@ -13247,8 +13245,6 @@
  
-   switch (fixP->fx_r_type)
-@@ -12800,8 +12798,27 @@
-   *reloc->sym_ptr_ptr = symbol_get_bfdsym (fixp->fx_addsy);
-   reloc->address = fixp->fx_frag->fr_address + fixp->fx_where;
- 
--  assert (! fixp->fx_pcrel);
--  reloc->addend = fixp->fx_addnumber;
-+  if (fixp->fx_pcrel)
-+    {
-+      bfd_vma pcrel_address;
-+
-+      pcrel_address = reloc->address;
-+
-+      if (OUTPUT_FLAVOR == bfd_target_elf_flavour)
-+	{
-+	  /* At this point, fx_addnumber is "symbol offset - pcrel_address".
-+	     Relocations want only the symbol offset.  */
-+	  reloc->addend = fixp->fx_addnumber + pcrel_address;
-+	}
-+      else
-+	{
-+	  /* A gruesome hack which is a result of the gruesome gas reloc
-+	     handling.  */
-+	  reloc->addend = pcrel_address;
-+	}
-+    }
-+  else
-+    reloc->addend = fixp->fx_addnumber;
- 
-   /* Since the old MIPS ELF ABI uses Rel instead of Rela, encode the vtable
-      entry to be used in the relocation's section offset.  */
-@@ -12812,6 +12829,34 @@
+   if (fixp->fx_pcrel)
+     {
+-      assert (fixp->fx_r_type == BFD_RELOC_16_PCREL_S2);
+-
+       /* At this point, fx_addnumber is "symbol offset - pcrel address".
+ 	 Relocations want only the symbol offset.  */
+       reloc->addend = fixp->fx_addnumber + reloc->address;
+@@ -13273,6 +13269,34 @@
      }
  
    code = fixp->fx_r_type;
@@ -189,8 +154,8 @@ diff -u -r1.263 tc-mips.c
 +	}
 +    }
  
-   /* To support a PC relative reloc, we used a Cygnus extension.
-      We check for that here to make sure that we don't let such a
+   reloc->howto = bfd_reloc_type_lookup (stdoutput, code);
+   if (reloc->howto == NULL)
 Index: gas/config/tc-mips.h
 ===================================================================
 RCS file: /cvsroot/gcc/src-cvs/src/gas/config/tc-mips.h,v
