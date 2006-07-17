@@ -101,18 +101,18 @@ diff -u -r1.2114 ChangeLog
 +	(tc_gen_reloc): Put back pc rel handling.
 +	* config/tc-mips.h: Defines DIFF_EXPR_OK.
 +
---- gas/config/tc-mips.c.orig	2005-12-20 23:43:56.000000000 +0100
-+++ gas/config/tc-mips.c	2005-12-21 22:47:56.000000000 +0100
-@@ -11401,8 +11401,6 @@
+--- gas/config/tc-mips.c.orig	2006-07-15 20:23:51.000000000 +0200
++++ gas/config/tc-mips.c	2006-07-17 10:51:06.164440000 +0200
+@@ -11736,8 +11736,6 @@
  
    buf = (bfd_byte *) (fixP->fx_frag->fr_literal + fixP->fx_where);
  
--  assert (! fixP->fx_pcrel || fixP->fx_r_type == BFD_RELOC_16_PCREL_S2);
+-  assert (!fixP->fx_pcrel || fixP->fx_r_type == BFD_RELOC_16_PCREL_S2);
 -
    /* Don't treat parts of a composite relocation as done.  There are two
       reasons for this:
  
-@@ -13247,8 +13245,6 @@
+@@ -13562,8 +13560,6 @@
  
    if (fixp->fx_pcrel)
      {
@@ -121,7 +121,7 @@ diff -u -r1.2114 ChangeLog
        /* At this point, fx_addnumber is "symbol offset - pcrel address".
  	 Relocations want only the symbol offset.  */
        reloc->addend = fixp->fx_addnumber + reloc->address;
-@@ -13273,6 +13269,34 @@
+@@ -13588,6 +13584,34 @@
      }
  
    code = fixp->fx_r_type;
