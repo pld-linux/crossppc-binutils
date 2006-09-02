@@ -1,10 +1,10 @@
 --- binutils-2.17.50.0.3/bfd/opncls.c.orig	2006-07-15 20:23:49.000000000 +0200
-+++ binutils-2.17.50.0.3/bfd/opncls.c	2006-09-02 10:21:33.212591250 +0200
++++ binutils-2.17.50.0.3/bfd/opncls.c	2006-09-02 15:14:01.443277250 +0200
 @@ -1215,6 +1215,10 @@
        return NULL;
      }
  
-+  /* PLD: check the possible absolute debuginfo path (e.g. /usr/lib/debug/... */
++  /* PLD: check the possible absolute debuginfo path (e.g. /tmp/.../usr/lib/debug/... */
 +  if (separate_debug_file_exists (basename, crc32))
 +    return basename;
 +
@@ -21,14 +21,17 @@
    sect = bfd_get_section_by_name (abfd, GNU_DEBUGLINK);
    if (sect)
      {
-@@ -1439,10 +1440,6 @@
+@@ -1439,9 +1440,10 @@
      crc32 = bfd_calc_gnu_debuglink_crc32 (crc32, buffer, count);
    fclose (handle);
  
 -  /* Strip off any path components in filename,
 -     now that we no longer need them.  */
 -  filename = lbasename (filename);
--
++  /* PLD: for files installed in rpm's build root strip the install prefix */
++  char const* relaxed_filename = strstr( filename, "/usr/lib/debug/" );
++  if ( relaxed_filename != NULL )
++    filename = relaxed_filename;
+ 
    debuglink_size = strlen (filename) + 1;
    debuglink_size += 3;
-   debuglink_size &= ~3;
