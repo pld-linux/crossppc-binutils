@@ -1,5 +1,5 @@
 --- binutils-2.17.50.0.3/bfd/opncls.c.orig	2006-07-15 20:23:49.000000000 +0200
-+++ binutils-2.17.50.0.3/bfd/opncls.c	2006-09-02 15:14:01.443277250 +0200
++++ binutils-2.17.50.0.3/bfd/opncls.c	2006-09-02 19:50:45.155718000 +0200
 @@ -1215,6 +1215,10 @@
        return NULL;
      }
@@ -11,27 +11,40 @@
    dir = strdup (abfd->filename);
    if (dir == NULL)
      {
-@@ -1353,9 +1357,6 @@
+@@ -1322,6 +1326,15 @@
+   return find_separate_debug_file (abfd, dir);
+ }
+ 
++static char const*
++relaxed_filename (char const* filename)
++{
++  char const* relaxed = strstr (filename, "/usr/lib/debug/");
++  if ( relaxed != NULL )
++    return relaxed;
++  return filename;
++}
++
+ /*
+ FUNCTION
+ 	bfd_create_gnu_debuglink_section
+@@ -1353,8 +1366,7 @@
        return NULL;
      }
  
 -  /* Strip off any path components in filename.  */
 -  filename = lbasename (filename);
--
++  filename = relaxed_filename (filename);
+ 
    sect = bfd_get_section_by_name (abfd, GNU_DEBUGLINK);
    if (sect)
-     {
-@@ -1439,9 +1440,10 @@
+@@ -1439,9 +1451,7 @@
      crc32 = bfd_calc_gnu_debuglink_crc32 (crc32, buffer, count);
    fclose (handle);
  
 -  /* Strip off any path components in filename,
 -     now that we no longer need them.  */
 -  filename = lbasename (filename);
-+  /* PLD: for files installed in rpm's build root strip the install prefix */
-+  char const* relaxed_filename = strstr( filename, "/usr/lib/debug/" );
-+  if ( relaxed_filename != NULL )
-+    filename = relaxed_filename;
++  filename = relaxed_filename (filename);
  
    debuglink_size = strlen (filename) + 1;
    debuglink_size += 3;
