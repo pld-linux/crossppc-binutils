@@ -39,18 +39,18 @@
  itbl-ops.o: itbl-ops.c itbl-ops.h
  e-crisaout.o: $(srcdir)/config/e-crisaout.c emul-target.h
  e-criself.o: $(srcdir)/config/e-criself.c emul-target.h
-diff -urNbB binutils-2.16.91.0.2.org/gas/doc/Makefile.am binutils-2.16.91.0.2/gas/doc/Makefile.am
---- binutils-2.16.91.0.2.org/gas/doc/Makefile.am	2005-07-20 19:27:27.000000000 +0000
-+++ binutils-2.16.91.0.2/gas/doc/Makefile.am	2005-07-21 18:31:04.000000000 +0000
+diff -urNbB binutils-2.16.91.0.9.org/gas/doc/Makefile.am binutils-2.16.91.0.9/gas/doc/Makefile.am
+--- binutils-2.17.50.0.9/gas/doc/Makefile.am.orig	2007-01-03 19:49:13.000000000 +0000
++++ binutils-2.17.50.0.9/gas/doc/Makefile.am	2007-01-04 11:49:04.759793250 +0000
 @@ -15,7 +15,7 @@
  
  man_MANS = as.1
  
 -info_TEXINFOS = as.texinfo 
 +info_TEXINFOS = as.texinfo gasp.texinfo
+ as_TEXINFOS = asconfig.texi gasver.texi $(CPU_DOCS)
  
- asconfig.texi: $(CONFIG).texi
- 	rm -f asconfig.texi
+ AM_MAKEINFOFLAGS = -I "$(srcdir)" -I "$(top_srcdir)/../libiberty"
 diff -urNbB binutils-2.16.91.0.2.org/gas/doc/gasp.texinfo binutils-2.16.91.0.2/gas/doc/gasp.texinfo
 --- binutils-2.16.91.0.2.org/gas/doc/gasp.texinfo	1970-01-01 00:00:00.000000000 +0000
 +++ binutils-2.16.91.0.2/gas/doc/gasp.texinfo	2005-07-21 18:31:04.000000000 +0000
