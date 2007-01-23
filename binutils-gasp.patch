@@ -5516,7 +5516,7 @@ diff -urNbB binutils-2.16.91.0.2.org/gas/doc/gasp.texinfo binutils-2.16.91.0.2/g
 diff -urNbB binutils-2.16.91.0.2.org/gas/macro.c binutils-2.16.91.0.2/gas/macro.c
 --- binutils-2.16.91.0.2.org/gas/macro.c	2005-05-10 22:46:44.000000000 +0000
 +++ binutils-2.16.91.0.2/gas/macro.c	2005-07-21 18:31:04.000000000 +0000
-@@ -77,8 +77,8 @@
+@@ -41,8 +41,8 @@
  static int get_apost_token (int, sb *, sb *, int);
  static int sub_actual (int, sb *, sb *, struct hash_control *, int, sb *, int);
  static const char *macro_expand_body
@@ -5527,7 +5527,7 @@ diff -urNbB binutils-2.16.91.0.2.org/gas/macro.c binutils-2.16.91.0.2/gas/macro.
  static void free_macro(macro_entry *);
  
  #define ISWHITE(x) ((x) == ' ' || (x) == '\t')
-@@ -762,7 +762,7 @@
+@@ -754,7 +754,7 @@
  
  static const char *
  macro_expand_body (sb *in, sb *out, formal_entry *formals,
@@ -5536,7 +5536,7 @@ diff -urNbB binutils-2.16.91.0.2.org/gas/macro.c binutils-2.16.91.0.2/gas/macro.
  {
    sb t;
    int src = 0, inquote = 0, macro_line = 0;
-@@ -794,7 +794,14 @@
+@@ -786,7 +786,14 @@
        else if (in->ptr[src] == '\\')
  	{
  	  src++;
@@ -5552,7 +5552,7 @@ diff -urNbB binutils-2.16.91.0.2.org/gas/macro.c binutils-2.16.91.0.2/gas/macro.
  	    {
  	      /* Sub in till the next ')' literally.  */
  	      src++;
-@@ -875,7 +882,7 @@
+@@ -867,7 +874,7 @@
  	  else
  	    {
  	      src = sb_skip_white (src + 5, in);
@@ -5561,7 +5561,7 @@ diff -urNbB binutils-2.16.91.0.2.org/gas/macro.c binutils-2.16.91.0.2/gas/macro.
  		{
  		  const char *name;
  		  formal_entry *f = new_formal ();
-@@ -911,6 +918,17 @@
+@@ -903,6 +910,17 @@
  		}
  	    }
  	}
@@ -5579,7 +5579,7 @@ diff -urNbB binutils-2.16.91.0.2.org/gas/macro.c binutils-2.16.91.0.2/gas/macro.
        else if (in->ptr[src] == '"'
  	       || (macro_mri && in->ptr[src] == '\''))
  	{
-@@ -992,7 +1010,7 @@
+@@ -984,7 +1002,7 @@
     body.  */
  
  static const char *
@@ -5588,7 +5588,7 @@ diff -urNbB binutils-2.16.91.0.2.org/gas/macro.c binutils-2.16.91.0.2/gas/macro.
  {
    sb t;
    formal_entry *ptr;
-@@ -1038,7 +1056,7 @@
+@@ -1029,7 +1047,7 @@
  
    /* Peel off the actuals and store them away in the hash tables' actuals.  */
    idx = sb_skip_white (idx, in);
@@ -5597,7 +5597,7 @@ diff -urNbB binutils-2.16.91.0.2.org/gas/macro.c binutils-2.16.91.0.2/gas/macro.
      {
        int scan;
  
-@@ -1167,7 +1185,7 @@
+@@ -1156,7 +1174,7 @@
  	  sb_add_string (&ptr->actual, buffer);
  	}
  
@@ -5606,7 +5606,7 @@ diff -urNbB binutils-2.16.91.0.2.org/gas/macro.c binutils-2.16.91.0.2/gas/macro.
      }
  
    /* Discard any unnamed formal arguments.  */
-@@ -1200,7 +1218,7 @@
+@@ -1189,7 +1207,7 @@
     *EXPAND.  Return 1 if a macro is found, 0 otherwise.  */
  
  int
@@ -5615,7 +5615,7 @@ diff -urNbB binutils-2.16.91.0.2.org/gas/macro.c binutils-2.16.91.0.2/gas/macro.
  	     const char **error, macro_entry **info)
  {
    const char *s;
-@@ -1235,7 +1253,7 @@
+@@ -1224,7 +1242,7 @@
      sb_add_char (&line_sb, *s++);
  
    sb_new (expand);
@@ -5624,7 +5624,7 @@ diff -urNbB binutils-2.16.91.0.2.org/gas/macro.c binutils-2.16.91.0.2/gas/macro.
  
    sb_kill (&line_sb);
  
-@@ -1296,7 +1314,7 @@
+@@ -1285,7 +1303,7 @@
     success, or an error message otherwise.  */
  
  const char *
@@ -5633,7 +5633,7 @@ diff -urNbB binutils-2.16.91.0.2.org/gas/macro.c binutils-2.16.91.0.2/gas/macro.
  {
    sb sub;
    formal_entry f;
-@@ -1329,16 +1347,16 @@
+@@ -1318,10 +1336,10 @@
    sb_reset (out);
  
    idx = sb_skip_comma (idx, in);
@@ -5646,26 +5646,28 @@ diff -urNbB binutils-2.16.91.0.2.org/gas/macro.c binutils-2.16.91.0.2/gas/macro.
      }
    else
      {
-       if (irpc && in->ptr[idx] == '"')
- 	++idx;
+@@ -1333,7 +1351,7 @@
+ 	  ++idx;
+ 	}
+ 
 -      while (idx < in->len)
 +      while (idx < in->len && in->ptr[idx] != comment_char)
  	{
  	  if (!irpc)
  	    idx = get_any_string (idx, in, &f.actual);
-@@ -1349,7 +1367,7 @@
- 		  int nxt;
- 
+@@ -1347,7 +1365,7 @@
+ 		    in_quotes = ! in_quotes;
+ 	  
  		  nxt = sb_skip_white (idx + 1, in);
 -		  if (nxt >= in->len)
 +		  if (nxt >= in->len || in->ptr[nxt] == comment_char)
  		    {
  		      idx = nxt;
  		      break;
-@@ -1359,7 +1377,7 @@
- 	      sb_add_char (&f.actual, in->ptr[idx]);
+@@ -1358,7 +1376,7 @@
  	      ++idx;
  	    }
+ 
 -	  err = macro_expand_body (&sub, out, &f, h, 0);
 +	  err = macro_expand_body (&sub, out, &f, h, 0, comment_char);
  	  if (err != NULL)

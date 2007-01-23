@@ -85,7 +85,7 @@ diff -uNr binutils-2.15.94.0.2.2.orig/bfd/elf-bfd.h binutils-2.15.94.0.2.2/bfd/e
 diff -uNr binutils-2.15.94.0.2.2.orig/bfd/elflink.c binutils-2.15.94.0.2.2/bfd/elflink.c
 --- binutils-2.15.94.0.2.2.orig/bfd/elflink.c	2005-02-07 20:42:44.000000000 +0100
 +++ binutils-2.15.94.0.2.2/bfd/elflink.c	2005-02-20 13:13:17.432547560 +0100
-@@ -4757,17 +4757,31 @@
+@@ -5286,16 +5286,30 @@
    if (!is_elf_hash_table (info->hash))
      return TRUE;
  
@@ -96,7 +96,6 @@ diff -uNr binutils-2.15.94.0.2.2.orig/bfd/elflink.c binutils-2.15.94.0.2.2/bfd/e
 +  else if (info->noexecheap)
 +    elf_tdata (output_bfd)->pax_flags |= PF_MPROTECT;
 +
-   elf_tdata (output_bfd)->relro = info->relro;
    if (info->execstack)
 -    elf_tdata (output_bfd)->stack_flags = PF_R | PF_W | PF_X;
 +    {
@@ -119,7 +118,7 @@ diff -uNr binutils-2.15.94.0.2.2.orig/bfd/elflink.c binutils-2.15.94.0.2.2/bfd/e
        for (inputobj = info->input_bfds;
  	   inputobj;
  	   inputobj = inputobj->link_next)
-@@ -4780,7 +4794,11 @@
+@@ -5308,7 +5322,11 @@
  	  if (s)
  	    {
  	      if (s->flags & SEC_CODE)
@@ -164,10 +163,10 @@ diff -uNr binutils-2.15.94.0.2.2.orig/include/bfdlink.h binutils-2.15.94.0.2.2/i
 diff -uNr binutils-2.15.94.0.2.2.orig/include/elf/common.h binutils-2.15.94.0.2.2/include/elf/common.h
 --- binutils-2.15.94.0.2.2.orig/include/elf/common.h	2004-11-22 21:33:32.000000000 +0100
 +++ binutils-2.15.94.0.2.2/include/elf/common.h	2005-02-20 13:13:17.482539960 +0100
-@@ -293,12 +293,27 @@
- #define PT_SUNW_EH_FRAME PT_GNU_EH_FRAME      /* Solaris uses the same value */
+@@ -307,12 +307,27 @@
  #define PT_GNU_STACK	(PT_LOOS + 0x474e551) /* Stack flags */
  #define PT_GNU_RELRO	(PT_LOOS + 0x474e552) /* Read-only after relocation */
+ #define PT_GNU_SHR	(PT_LOOS + 0x474e554) /* Sharable segment */
 +#define PT_PAX_FLAGS	(PT_LOOS + 0x5041580) /* PaX flags */
  
  /* Program segment permissions, in program header p_flags field.  */
