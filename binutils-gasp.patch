@@ -1,6 +1,6 @@
---- binutils-2.17.50.0.3/gas/Makefile.am.orig	2006-07-15 20:23:50.000000000 +0200
-+++ binutils-2.17.50.0.3/gas/Makefile.am	2006-07-17 10:44:29.524440000 +0200
-@@ -192,7 +192,7 @@
+--- binutils-2.17.50.0.13/gas/Makefile.am.orig	2007-03-16 16:48:29.000000000 +0100
++++ binutils-2.17.50.0.13/gas/Makefile.am	2007-03-16 20:26:20.200480821 +0100
+@@ -199,7 +199,7 @@
  	symbols.c \
  	write.c
  
@@ -9,7 +9,7 @@
  
  HFILES = \
  	as.h \
-@@ -441,7 +441,8 @@
+@@ -455,7 +455,8 @@
  
  # Note: GASP is now deprecated and has been removed.  It is still
  # available in the CVS archive or older binutils releases if it is needed.
@@ -19,7 +19,7 @@
  noinst_SCRIPTS = $(GDBINIT)
  EXTRA_SCRIPTS = .gdbinit
  
-@@ -498,6 +499,10 @@
+@@ -517,6 +518,10 @@
  	as.h asintl.h bignum.h bit_fix.h config.h emul.h expr.h flonum.h \
  	frags.h hash.h listing.h obj.h read.h symbols.h tc.h write.h
  
@@ -30,28 +30,26 @@
  EXPECT = expect
  RUNTEST = runtest
  RUNTESTFLAGS=
-@@ -2048,6 +2053,8 @@
+@@ -2146,6 +2151,8 @@
    subsegs.h struc-symbol.h
  write.o: write.c subsegs.h $(INCDIR)/obstack.h output-file.h \
-   dwarf2dbg.h
+   dwarf2dbg.h $(BFDDIR)/libbfd.h $(INCDIR)/hashtab.h
 +gasp.o: gasp.c $(INCDIR)/getopt.h $(INCDIR)/safe-ctype.h \
-+  sb.h macro.h $(INCDIR)/xregex.h $(INCDIR)/xregex2.h
++   sb.h macro.h $(INCDIR)/xregex.h $(INCDIR)/xregex2.h
  itbl-ops.o: itbl-ops.c itbl-ops.h
  e-crisaout.o: $(srcdir)/config/e-crisaout.c emul-target.h
  e-criself.o: $(srcdir)/config/e-criself.c emul-target.h
-diff -urNbB binutils-2.16.91.0.9.org/gas/doc/Makefile.am binutils-2.16.91.0.9/gas/doc/Makefile.am
---- binutils-2.17.50.0.9/gas/doc/Makefile.am.orig	2007-01-03 19:49:13.000000000 +0000
-+++ binutils-2.17.50.0.9/gas/doc/Makefile.am	2007-01-04 11:49:04.759793250 +0000
-@@ -15,7 +15,7 @@
- 
- man_MANS = as.1
- 
--info_TEXINFOS = as.texinfo 
-+info_TEXINFOS = as.texinfo gasp.texinfo
- as_TEXINFOS = asconfig.texi gasver.texi $(CPU_DOCS)
- 
- AM_MAKEINFOFLAGS = -I "$(srcdir)" -I "$(top_srcdir)/../libiberty"
-diff -urNbB binutils-2.16.91.0.2.org/gas/doc/gasp.texinfo binutils-2.16.91.0.2/gas/doc/gasp.texinfo
+--- binutils-2.17.50.0.13/gas/doc/Makefile.am.orig	2007-03-16 16:48:29.000000000 +0100
++++ binutils-2.17.50.0.13/gas/doc/Makefile.am	2007-03-16 20:27:05.810679469 +0100
+@@ -109,7 +109,7 @@
+ # Build the man page from the texinfo file
+ # The sed command removes the no-adjust Nroff command so that
+ # the man output looks standard.
+-as.1: $(srcdir)/as.texinfo asconfig.texi $(CPU_DOCS)
++as.1: $(srcdir)/as.texinfo asconfig.texi gasp.texinfo $(CPU_DOCS)
+ 	touch $@
+ 	-$(TEXI2POD) $(MANCONF) < $(srcdir)/as.texinfo > as.pod
+ 	-($(POD2MAN) as.pod | \
 --- binutils-2.16.91.0.2.org/gas/doc/gasp.texinfo	1970-01-01 00:00:00.000000000 +0000
 +++ binutils-2.16.91.0.2/gas/doc/gasp.texinfo	2005-07-21 18:31:04.000000000 +0000
 @@ -0,0 +1,1456 @@
@@ -1562,7 +1560,7 @@ diff -urNbB binutils-2.16.91.0.2.org/gas/doc/gasp.texinfo binutils-2.16.91.0.2/g
 +*/
 +
 +#include "config.h"
-+#include "bin-bugs.h"
++#include "bfdver.h"
 +
 +#include <assert.h>
 +#include <stdio.h>
@@ -5513,7 +5511,6 @@ diff -urNbB binutils-2.16.91.0.2.org/gas/doc/gasp.texinfo binutils-2.16.91.0.2/g
 +
 +/* just a stub to satisfy unused function in sb.o */
 +int do_scrub_chars (int (*get) (char*, int), char *tostart, int tolen) {}
-diff -urNbB binutils-2.16.91.0.2.org/gas/macro.c binutils-2.16.91.0.2/gas/macro.c
 --- binutils-2.16.91.0.2.org/gas/macro.c	2005-05-10 22:46:44.000000000 +0000
 +++ binutils-2.16.91.0.2/gas/macro.c	2005-07-21 18:31:04.000000000 +0000
 @@ -41,8 +41,8 @@
@@ -5673,7 +5670,6 @@ diff -urNbB binutils-2.16.91.0.2.org/gas/macro.c binutils-2.16.91.0.2/gas/macro.
  	  if (err != NULL)
  	    break;
  	  if (!irpc)
-diff -urNbB binutils-2.16.91.0.2.org/gas/macro.h binutils-2.16.91.0.2/gas/macro.h
 --- binutils-2.16.91.0.2.org/gas/macro.h	2005-05-10 22:46:44.000000000 +0000
 +++ binutils-2.16.91.0.2/gas/macro.h	2005-07-21 18:31:04.000000000 +0000
 @@ -90,8 +90,8 @@
@@ -5687,7 +5683,6 @@ diff -urNbB binutils-2.16.91.0.2.org/gas/macro.h binutils-2.16.91.0.2/gas/macro.
 +extern const char *expand_irp (int, int, sb *, sb *, int (*) (sb *), int);
  
  #endif
-diff -urNbB binutils-2.16.91.0.2.org/gas/read.c binutils-2.16.91.0.2/gas/read.c
 --- binutils-2.16.91.0.2.org/gas/read.c	2005-06-22 20:53:34.000000000 +0000
 +++ binutils-2.16.91.0.2/gas/read.c	2005-07-21 18:31:04.000000000 +0000
 @@ -555,7 +555,7 @@
