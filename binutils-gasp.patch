@@ -45,7 +45,7 @@
  
  man_MANS = as.1
  
--info_TEXINFOS = as.texinfo
+-info_TEXINFOS = as.texinfo 
 +info_TEXINFOS = as.texinfo gasp.texinfo
  as_TEXINFOS = asconfig.texi $(CPU_DOCS)
  
