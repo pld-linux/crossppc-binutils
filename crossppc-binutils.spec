@@ -5,12 +5,12 @@ Summary(pl.UTF-8):	Skrośne narzędzia programistyczne GNU dla PPC - binutils
 Summary(pt_BR.UTF-8):	Utilitários para desenvolvimento de binários da GNU - PPC binutils
 Summary(tr.UTF-8):	GNU geliştirme araçları - PPC binutils
 Name:		crossppc-binutils
-Version:	2.17.50.0.3
+Version:	2.17.50.0.13
 Release:	1
 License:	GPL
 Group:		Development/Tools
 Source0:	ftp://ftp.kernel.org/pub/linux/devel/binutils/binutils-%{version}.tar.bz2
-# Source0-md5:	684c535df0ff8ffaa11fe4aed14539e7
+# Source0-md5:	a51c75cae72349b53cd017488113cfa0
 URL:		http://sources.redhat.com/binutils/
 BuildRequires:	automake
 BuildRequires:	bash
