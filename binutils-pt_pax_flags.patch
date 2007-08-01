@@ -10,9 +10,9 @@
    /* Symbol version definitions in external objects.  */
    Elf_Internal_Verdef *verdef;
  
---- binutils-2.17.50.0.3/bfd/elf.c.orig	2006-07-15 20:23:49.000000000 +0200
-+++ binutils-2.17.50.0.3/bfd/elf.c	2006-07-17 10:47:54.374440000 +0200
-@@ -1101,6 +1101,7 @@
+--- binutils-2.17.50.0.18/bfd/elf.c.orig	2007-08-01 11:12:02.000000000 -0400
++++ binutils-2.17.50.0.18/bfd/elf.c	2007-08-01 14:27:36.086986774 -0400
+@@ -1085,6 +1085,7 @@
      case PT_GNU_EH_FRAME: pt = "EH_FRAME"; break;
      case PT_GNU_STACK: pt = "STACK"; break;
      case PT_GNU_RELRO: pt = "RELRO"; break;
@@ -20,7 +20,7 @@
      default: pt = NULL; break;
      }
    return pt;
-@@ -2662,6 +2663,9 @@
+@@ -2346,6 +2347,9 @@
      case PT_GNU_RELRO:
        return _bfd_elf_make_section_from_phdr (abfd, hdr, index, "relro");
  
@@ -30,7 +30,7 @@
      default:
        /* Check for any processor-specific program segment types.  */
        bed = get_elf_backend_data (abfd);
-@@ -3633,6 +3637,11 @@
+@@ -3326,6 +3330,11 @@
        ++segs;
      }
  
@@ -42,7 +42,7 @@
    for (s = abfd->sections; s != NULL; s = s->next)
      {
        if ((s->flags & SEC_LOAD) != 0
-@@ -4116,6 +4125,20 @@
+@@ -3945,6 +3954,20 @@
  	  pm = &m->next;
  	}
  
@@ -63,19 +63,19 @@
        free (sections);
        elf_tdata (abfd)->segment_map = mfirst;
      }
-@@ -5228,7 +5251,8 @@
+@@ -5129,7 +5152,8 @@
         5. PT_GNU_STACK segments do not include any sections.
         6. PT_TLS segment includes only SHF_TLS sections.
         7. SHF_TLS sections are only in PT_TLS or PT_LOAD segments.
 -       8. PT_DYNAMIC should not contain empty sections at the beginning
 +       8. PT_PAX_FLAGS segments do not include any sections.
 +       9. PT_DYNAMIC should not contain empty sections at the beginning
-           (with the possible exception of .dynamic).  */
- #define INCLUDE_SECTION_IN_SEGMENT(section, segment, bed)		\
+ 	  (with the possible exception of .dynamic).  */
+ #define IS_SECTION_IN_INPUT_SEGMENT(section, segment, bed)		\
    ((((segment->p_paddr							\
-@@ -5238,6 +5262,7 @@
+@@ -5138,6 +5162,7 @@
+      && (section->flags & SEC_ALLOC) != 0)				\
      || IS_COREFILE_NOTE (segment, section))				\
-    && section->output_section != NULL					\
     && segment->p_type != PT_GNU_STACK					\
 +   && segment->p_type != PT_PAX_FLAGS					\
     && (segment->p_type != PT_TLS					\
