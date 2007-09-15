@@ -186,9 +186,9 @@
  /* #define PF_MASKOS	0x0F000000    *//* OS-specific reserved bits */
  #define PF_MASKOS	0x0FF00000	/* New value, Oct 4, 1999 Draft */
  #define PF_MASKPROC	0xF0000000	/* Processor-specific reserved bits */
---- binutils-2.15.94.0.2.2.orig/ld/emultempl/elf32.em	2004-11-22 21:33:33.000000000 +0100
-+++ binutils-2.15.94.0.2.2/ld/emultempl/elf32.em	2005-02-20 13:13:17.492538440 +0100
-@@ -1859,6 +1859,16 @@
+--- binutils-2.18.50.0.1/ld/emultempl/elf32.em.orig	2007-09-08 19:34:12.000000000 +0200
++++ binutils-2.18.50.0.1/ld/emultempl/elf32.em	2007-09-15 21:41:35.688212063 +0200
+@@ -2139,6 +2139,16 @@
  	  link_info.noexecstack = TRUE;
  	  link_info.execstack = FALSE;
  	}
@@ -205,20 +205,22 @@
  EOF
  
    if test -n "$COMMONPAGESIZE"; then
-@@ -1925,6 +1935,7 @@
-   fprintf (file, _("  -z combreloc\t\tMerge dynamic relocs into one section and sort\n"));
-   fprintf (file, _("  -z defs\t\tReport unresolved symbols in object files.\n"));
-   fprintf (file, _("  -z execstack\t\tMark executable as requiring executable stack\n"));
-+  fprintf (file, _("  -z execheap\t\tMark executable as requiring executable heap\n"));
-   fprintf (file, _("  -z initfirst\t\tMark DSO to be initialized first at runtime\n"));
-   fprintf (file, _("  -z interpose\t\tMark object to interpose all DSOs but executable\n"));
-   fprintf (file, _("  -z lazy\t\tMark object lazy runtime binding (default)\n"));
-@@ -1936,6 +1947,7 @@
-   fprintf (file, _("  -z nodelete\t\tMark DSO non-deletable at runtime\n"));
-   fprintf (file, _("  -z nodlopen\t\tMark DSO not available to dlopen\n"));
-   fprintf (file, _("  -z nodump\t\tMark DSO not available to dldump\n"));
-+  fprintf (file, _("  -z noexecheap\tMark executable as not requiring executable heap\n"));
-   fprintf (file, _("  -z noexecstack\tMark executable as not requiring executable stack\n"));
+@@ -2220,6 +2230,8 @@
+   fprintf (file, _("\
+   -z defs                     Report unresolved symbols in object files.\n"));
+   fprintf (file, _("\
++  -z execheap                 Mark executable as requiring executable heap\n"));
++  fprintf (file, _("\
+   -z execstack                Mark executable as requiring executable stack\n"));
+   fprintf (file, _("\
+   -z initfirst                Mark DSO to be initialized first at runtime\n"));
+@@ -2244,6 +2256,8 @@
+   fprintf (file, _("\
+   -z nodump                   Mark DSO not available to dldump\n"));
+   fprintf (file, _("\
++  -z noexecheap               Mark executable as not requiring executable heap\n"));
++  fprintf (file, _("\
+   -z noexecstack              Mark executable as not requiring executable stack\n"));
  EOF
  
 --- binutils-2.15.94.0.2.2.orig/ld/ldgram.y	2004-11-22 21:33:32.000000000 +0100
