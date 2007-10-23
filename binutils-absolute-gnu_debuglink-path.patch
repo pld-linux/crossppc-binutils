@@ -1,6 +1,6 @@
---- binutils-2.17.50.0.3/bfd/opncls.c.orig	2006-07-15 20:23:49.000000000 +0200
-+++ binutils-2.17.50.0.3/bfd/opncls.c	2006-09-02 19:50:45.155718000 +0200
-@@ -1215,6 +1215,10 @@
+--- binutils-2.18.50.0.2/bfd/opncls.c.orig	2007-10-03 17:52:57.000000000 +0200
++++ binutils-2.18.50.0.2/bfd/opncls.c	2007-10-22 22:30:03.233754376 +0200
+@@ -1241,6 +1241,10 @@
        return NULL;
      }
  
@@ -8,10 +8,10 @@
 +  if (separate_debug_file_exists (basename, crc32))
 +    return basename;
 +
-   dir = strdup (abfd->filename);
-   if (dir == NULL)
-     {
-@@ -1322,6 +1326,15 @@
+   for (dirlen = strlen (abfd->filename); dirlen > 0; dirlen--)
+     if (IS_DIR_SEPARATOR (abfd->filename[dirlen - 1]))
+       break;
+@@ -1345,6 +1349,15 @@
    return find_separate_debug_file (abfd, dir);
  }
  
@@ -27,7 +27,7 @@
  /*
  FUNCTION
  	bfd_create_gnu_debuglink_section
-@@ -1353,8 +1366,7 @@
+@@ -1376,8 +1389,7 @@
        return NULL;
      }
  
@@ -37,7 +37,7 @@
  
    sect = bfd_get_section_by_name (abfd, GNU_DEBUGLINK);
    if (sect)
-@@ -1439,9 +1451,7 @@
+@@ -1463,9 +1475,7 @@
      crc32 = bfd_calc_gnu_debuglink_crc32 (crc32, buffer, count);
    fclose (handle);
  
@@ -46,5 +46,5 @@
 -  filename = lbasename (filename);
 +  filename = relaxed_filename (filename);
  
-   debuglink_size = strlen (filename) + 1;
-   debuglink_size += 3;
+   filelen = strlen (filename);
+   debuglink_size = filelen + 1;
