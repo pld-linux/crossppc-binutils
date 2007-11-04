@@ -4,8 +4,8 @@
  	symbols.c \
  	write.c
  
--CFILES = $(GAS_CFILES) itbl-ops.c
-+CFILES = $(GAS_CFILES) gasp.c itbl-ops.c
+-CFILES = $(GAS_CFILES) itbl-ops.c cgen.c
++CFILES = $(GAS_CFILES) gasp.c itbl-ops.c cgen.c
  
  HFILES = \
  	as.h \
