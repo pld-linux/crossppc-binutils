@@ -5,13 +5,25 @@ Summary(pl.UTF-8):	Skrośne narzędzia programistyczne GNU dla PPC - binutils
 Summary(pt_BR.UTF-8):	Utilitários para desenvolvimento de binários da GNU - PPC binutils
 Summary(tr.UTF-8):	GNU geliştirme araçları - PPC binutils
 Name:		crossppc-binutils
-Version:	2.17.50.0.13
+Version:	2.18.50.0.9
 Release:	1
 License:	GPL
 Group:		Development/Tools
 Source0:	ftp://ftp.kernel.org/pub/linux/devel/binutils/binutils-%{version}.tar.bz2
-# Source0-md5:	a51c75cae72349b53cd017488113cfa0
+# Source0-md5:	68e3510d9c790b134450c0a243c251cd
+Source1:	http://www.mif.pg.gda.pl/homepages/ankry/man-PLD/binutils-non-english-man-pages.tar.bz2
+# Source1-md5:	a717d9707ec77d82acb6ec9078c472d6
+Patch0:		binutils-gasp.patch
+Patch1:		binutils-info.patch
+Patch2:		binutils-libtool-relink.patch
+Patch3:		binutils-pt_pax_flags.patch
+Patch4:		binutils-mips-relocs.patch
+Patch5:		binutils-flex.patch
+Patch6:		binutils-discarded.patch
+Patch7:		binutils-absolute-gnu_debuglink-path.patch
+Patch8:		binutils-libtool-m.patch
 URL:		http://sources.redhat.com/binutils/
+BuildRequires:	autoconf
 BuildRequires:	automake
 BuildRequires:	bash
 BuildRequires:	bison
@@ -19,6 +31,7 @@ BuildRequires:	flex
 %ifarch sparc sparc32
 BuildRequires:	sparc32
 %endif
+BuildRequires:	texinfo >= 4.2
 ExcludeArch:	ppc
 BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
 
@@ -51,8 +64,31 @@ Ten pakiet zawiera wersję skrośną generującą kod dla PPC.
 
 %prep
 %setup -q -n binutils-%{version}
+%patch0 -p1
+%patch1 -p1
+%patch2 -p1
+%{?with_pax:%patch3 -p1}
+%patch4 -p0
+%patch5 -p1
+%patch6 -p1
+%patch7 -p1
+%patch8 -p1
+
+# hacks for ac 2.59 only
+rm config/override.m4
 
 %build
+# non-standard regeneration (needed because of gasp patch)
+# AM_BINUTILS_WARNINGS in bfd/warning.m4, ZW_GNU_GETTEXT_SISTER_DIR in config/gettext-sister.m4
+for dir in gas bfd; do
+	cd $dir || exit 1
+	aclocal -I .. -I ../config -I ../bfd
+	automake --cygnus Makefile
+	automake --cygnus doc/Makefile
+	autoconf
+	cd ..
+done
+
 cp /usr/share/automake/config.sub .
 
 # ldscripts won't be generated properly if SHELL is not bash...
@@ -63,6 +99,9 @@ CONFIG_SHELL="/bin/bash" \
 sparc32 \
 %endif
 ./configure \
+	--disable-debug \
+	--disable-werror \
+	--enable-build-warnings=,-Wno-missing-prototypes \
 	--disable-shared \
 	--disable-nls \
 	--prefix=%{_prefix} \
@@ -72,7 +111,9 @@ sparc32 \
 	--enable-64-bit-bfd \
 	--target=%{target}
 
-%{__make} all \
+%{__make} -j1 configure-bfd
+%{__make} -j1 headers -C bfd
+%{__make} -j1 all info \
 	tooldir=%{_prefix} \
 	EXEEXT=""
 
