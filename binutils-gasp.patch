@@ -5698,8 +5698,8 @@
  
    sb_new (&out);
  
--  err = expand_irp (irpc, 0, &s, &out, get_line_sb);
-+  err = expand_irp (irpc, 0, &s, &out, get_line_sb, '\0');
+-  err = expand_irp (irpc, 0, &s, &out, get_non_macro_line_sb);
++  err = expand_irp (irpc, 0, &s, &out, get_non_macro_line_sb, '\0');
    if (err != NULL)
      as_bad_where (file, line, "%s", err);
  
