@@ -1,16 +1,16 @@
---- binutils-2.15.94.0.2.2/bfd/opncls.c~	2008-10-14 21:22:06.000000000 +0300
-+++ binutils-2.15.94.0.2.2/bfd/opncls.c	2008-10-14 21:24:48.052157688 +0300
-@@ -1141,6 +1141,10 @@
+--- binutils-2.18.50.0.2/bfd/opncls.c.orig	2007-10-03 17:52:57.000000000 +0200
++++ binutils-2.18.50.0.2/bfd/opncls.c	2007-10-22 22:30:03.233754376 +0200
+@@ -1241,6 +1241,10 @@
+       return NULL;
      }
-   BFD_ASSERT (strlen (dir) != 0);
  
 +  /* PLD: check the possible absolute debuginfo path (e.g. /tmp/.../usr/lib/debug/... */
 +  if (separate_debug_file_exists (basename, crc32))
 +    return basename;
 +
-   /* Strip off filename part.  */
-   for (i = strlen (dir) - 1; i >= 0; i--)
-     if (IS_DIR_SEPARATOR (dir[i]))
+   for (dirlen = strlen (abfd->filename); dirlen > 0; dirlen--)
+     if (IS_DIR_SEPARATOR (abfd->filename[dirlen - 1]))
+       break;
 @@ -1345,6 +1349,15 @@
    return find_separate_debug_file (abfd, dir);
  }
