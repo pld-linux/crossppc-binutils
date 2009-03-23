@@ -1,0 +1,22 @@
+--- ../binutils-2.19.50.0.1.orig/bfd/elfcode.h	2008-11-26 09:29:54.000000000 +0000
++++ ./bfd/elfcode.h	2008-11-26 12:01:37.000000000 +0000
+@@ -1170,6 +1170,19 @@ elf_checksum_contents (bfd *abfd,
+ 
+       if (i_shdr.contents)
+ 	(*process) (i_shdr.contents, i_shdr.sh_size, arg);
++      else
++	{
++	  asection *sec;
++
++	  sec = bfd_section_from_elf_index (abfd, count);
++	  if (sec != NULL)
++	    {
++	      if (sec->contents == NULL)
++		bfd_malloc_and_get_section (abfd, sec, & sec->contents);
++	      if (sec->contents != NULL)
++		(*process) (sec->contents, i_shdr.sh_size, arg);
++	    }
++	}
+     }
+ 
+   return TRUE;
