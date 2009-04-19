@@ -5,12 +5,12 @@ Summary(pl.UTF-8):	Skrośne narzędzia programistyczne GNU dla PPC - binutils
 Summary(pt_BR.UTF-8):	Utilitários para desenvolvimento de binários da GNU - PPC binutils
 Summary(tr.UTF-8):	GNU geliştirme araçları - PPC binutils
 Name:		crossppc-binutils
-Version:	2.18.50.0.9
+Version:	2.19.51.0.3
 Release:	1
 License:	GPL
 Group:		Development/Tools
 Source0:	ftp://ftp.kernel.org/pub/linux/devel/binutils/binutils-%{version}.tar.bz2
-# Source0-md5:	68e3510d9c790b134450c0a243c251cd
+# Source0-md5:	c55a2b1eadf818d38e963060412fadca
 Source1:	http://www.mif.pg.gda.pl/homepages/ankry/man-PLD/binutils-non-english-man-pages.tar.bz2
 # Source1-md5:	a717d9707ec77d82acb6ec9078c472d6
 Patch0:		binutils-gasp.patch
@@ -22,6 +22,7 @@ Patch5:		binutils-flex.patch
 Patch6:		binutils-discarded.patch
 Patch7:		binutils-absolute-gnu_debuglink-path.patch
 Patch8:		binutils-libtool-m.patch
+Patch9:		binutils-build-id.patch
 URL:		http://sources.redhat.com/binutils/
 BuildRequires:	autoconf
 BuildRequires:	automake
@@ -73,6 +74,7 @@ Ten pakiet zawiera wersję skrośną generującą kod dla PPC.
 %patch6 -p1
 %patch7 -p1
 %patch8 -p1
+%patch9 -p1
 
 # hacks for ac 2.59 only
 rm config/override.m4
@@ -92,6 +94,7 @@ done
 cp /usr/share/automake/config.sub .
 
 # ldscripts won't be generated properly if SHELL is not bash...
+CC="%{__cc}" \
 CFLAGS="%{rpmcflags} -fno-strict-aliasing" \
 LDFLAGS="%{rpmldflags}" \
 CONFIG_SHELL="/bin/bash" \
