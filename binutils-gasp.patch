@@ -30,15 +30,15 @@
  EXPECT = expect
  RUNTEST = runtest
  RUNTESTFLAGS=
-@@ -2146,6 +2151,8 @@
-   subsegs.h struc-symbol.h
- write.o: write.c subsegs.h $(INCDIR)/obstack.h output-file.h \
-   dwarf2dbg.h $(BFDDIR)/libbfd.h $(INCDIR)/hashtab.h
+@@ -2282,6 +2282,8 @@
+ write.o: write.c $(INCDIR)/alloca-conf.h subsegs.h \
+   $(INCDIR)/obstack.h output-file.h dwarf2dbg.h $(BFDDIR)/libbfd.h \
+   $(INCDIR)/hashtab.h
 +gasp.o: gasp.c $(INCDIR)/getopt.h $(INCDIR)/safe-ctype.h \
-+   sb.h macro.h $(INCDIR)/xregex.h $(INCDIR)/xregex2.h
- itbl-ops.o: itbl-ops.c itbl-ops.h
- e-crisaout.o: $(srcdir)/config/e-crisaout.c emul-target.h
- e-criself.o: $(srcdir)/config/e-criself.c emul-target.h
++  sb.h macro.h $(INCDIR)/xregex.h $(INCDIR)/xregex2.h
+ itbl-ops.o: itbl-ops.c $(INCDIR)/alloca-conf.h itbl-ops.h
+ cgen.o: cgen.c $(INCDIR)/alloca-conf.h cgen-desc.h \
+   subsegs.h $(INCDIR)/obstack.h cgen.h dwarf2dbg.h struc-symbol.h
 --- binutils-2.17.50.0.13/gas/doc/Makefile.am.orig	2007-03-16 16:48:29.000000000 +0100
 +++ binutils-2.17.50.0.13/gas/doc/Makefile.am	2007-03-16 20:27:05.810679469 +0100
 @@ -15,7 +15,7 @@
