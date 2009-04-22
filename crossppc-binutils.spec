@@ -1,3 +1,7 @@
+#
+# Conditional build:
+%bcond_with	gold		# enable gold (gnu ld successor) on supported archs (x86/sparc)
+
 Summary:	Cross PPC GNU binary utility development utilities - binutils
 Summary(es.UTF-8):	Utilitarios para desarrollo de binarios de la GNU - PPC binutils
 Summary(fr.UTF-8):	Utilitaires de développement binaire de GNU - PPC binutils
@@ -5,12 +9,12 @@ Summary(pl.UTF-8):	Skrośne narzędzia programistyczne GNU dla PPC - binutils
 Summary(pt_BR.UTF-8):	Utilitários para desenvolvimento de binários da GNU - PPC binutils
 Summary(tr.UTF-8):	GNU geliştirme araçları - PPC binutils
 Name:		crossppc-binutils
-Version:	2.19.51.0.3
+Version:	2.19.51.0.4
 Release:	1
-License:	GPL
+License:	GPL v3+
 Group:		Development/Tools
 Source0:	ftp://ftp.kernel.org/pub/linux/devel/binutils/binutils-%{version}.tar.bz2
-# Source0-md5:	c55a2b1eadf818d38e963060412fadca
+# Source0-md5:	7b0d5a4fd434237922aeeab0409f146d
 Source1:	http://www.mif.pg.gda.pl/homepages/ankry/man-PLD/binutils-non-english-man-pages.tar.bz2
 # Source1-md5:	a717d9707ec77d82acb6ec9078c472d6
 Patch0:		binutils-gasp.patch
@@ -23,16 +27,22 @@ Patch6:		binutils-discarded.patch
 Patch7:		binutils-absolute-gnu_debuglink-path.patch
 Patch8:		binutils-libtool-m.patch
 Patch9:		binutils-build-id.patch
+Patch10:	binutils-tooldir.patch
 URL:		http://sources.redhat.com/binutils/
-BuildRequires:	autoconf
-BuildRequires:	automake
-BuildRequires:	bash
+BuildRequires:	autoconf >= 2.60
+BuildRequires:	automake >= 1:1.8.2
 BuildRequires:	bison
 BuildRequires:	flex
+BuildRequires:	gettext-devel
+%if %{with gold}
+BuildRequires:	libstdc++-devel >= 6:4.0-1
+%endif
+BuildRequires:	perl-tools-pod
 %ifarch sparc sparc32
 BuildRequires:	sparc32
 %endif
 BuildRequires:	texinfo >= 4.2
+Conflicts:	gcc-c++ < 5:3.3
 ExcludeArch:	ppc
 BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
 
@@ -75,11 +85,15 @@ Ten pakiet zawiera wersję skrośną generującą kod dla PPC.
 %patch7 -p1
 %patch8 -p1
 %patch9 -p1
+%patch10 -p1
 
-# hacks for ac 2.59 only
+# file contains hacks for ac 2.59 only
 rm config/override.m4
 
 %build
+%{__aclocal}
+%{__autoconf}
+
 # non-standard regeneration (needed because of gasp patch)
 # AM_BINUTILS_WARNINGS in bfd/warning.m4, ZW_GNU_GETTEXT_SISTER_DIR in config/gettext-sister.m4
 for dir in gas bfd; do
@@ -91,17 +105,14 @@ for dir in gas bfd; do
 	cd ..
 done
 
-cp /usr/share/automake/config.sub .
+cp -f /usr/share/automake/config.* .
 
-# ldscripts won't be generated properly if SHELL is not bash...
-CC="%{__cc}" \
-CFLAGS="%{rpmcflags} -fno-strict-aliasing" \
-LDFLAGS="%{rpmldflags}" \
-CONFIG_SHELL="/bin/bash" \
+CFLAGS="%{rpmcflags}"; export CFLAGS
+CC="%{__cc}"; export CC
 %ifarch sparc
 sparc32 \
 %endif
-./configure \
+./configure %{_target_platform} \
 	--disable-debug \
 	--disable-werror \
 	--enable-build-warnings=,-Wno-missing-prototypes \
@@ -109,30 +120,24 @@ sparc32 \
 	--disable-nls \
 	--prefix=%{_prefix} \
 	--libdir=%{_libdir} \
-	--mandir=%{_mandir} \
 	--infodir=%{_infodir} \
-	--enable-64-bit-bfd \
+	--mandir=%{_mandir} \
+	--with-tooldir=%{arch} \
+	%{?with_gold:--enable-gold} \
 	--target=%{target}
 
-%{__make} -j1 configure-bfd
-%{__make} -j1 headers -C bfd
-%{__make} -j1 all info \
-	tooldir=%{_prefix} \
-	EXEEXT=""
+%{__make}
 
 %install
 rm -rf $RPM_BUILD_ROOT
 install -d $RPM_BUILD_ROOT%{_prefix}
 
 %{__make} install \
-	prefix=$RPM_BUILD_ROOT%{_prefix} \
-	mandir=$RPM_BUILD_ROOT%{_mandir} \
-	infodir=$RPM_BUILD_ROOT%{_infodir} \
-	libdir=$RPM_BUILD_ROOT%{_libdir}
+	DESTDIR=$RPM_BUILD_ROOT
 
 # remove these man pages unless we cross-build for win*/netware platforms.
 # however, this should be done in Makefiles.
-rm -f $RPM_BUILD_ROOT%{_mandir}/man1/{*dlltool,*nlmconv,*windres}.1
+rm $RPM_BUILD_ROOT%{_mandir}/man1/{*dlltool,*nlmconv,*windres}.1
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -144,7 +149,8 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{arch}
 %dir %{arch}/bin
 %attr(755,root,root) %{arch}/bin/*
+%if %{without gold}
 %dir %{arch}/lib
-%dir %{arch}/lib/*
-%{arch}/lib/ldscripts/*
+%{arch}/lib/ldscripts
+%endif
 %{_mandir}/man?/%{target}-*
