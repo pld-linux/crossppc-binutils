@@ -158,34 +158,34 @@
  
 --- binutils-2.15.94.0.2.2.orig/include/elf/common.h	2004-11-22 21:33:32.000000000 +0100
 +++ binutils-2.15.94.0.2.2/include/elf/common.h	2005-02-20 13:13:17.482539960 +0100
-@@ -307,12 +307,27 @@
+@@ -423,6 +423,7 @@
  #define PT_GNU_STACK	(PT_LOOS + 0x474e551) /* Stack flags */
  #define PT_GNU_RELRO	(PT_LOOS + 0x474e552) /* Read-only after relocation */
  #define PT_GNU_SHR	(PT_LOOS + 0x474e554) /* Sharable segment */
-+#define PT_PAX_FLAGS	(PT_LOOS + 0x5041580) /* PaX flags */
++#define PT_PAX_FLAGS   (PT_LOOS + 0x5041580) /* PaX flags */
  
  /* Program segment permissions, in program header p_flags field.  */
  
- #define PF_X		(1 << 0)	/* Segment is executable */
- #define PF_W		(1 << 1)	/* Segment is writable */
- #define PF_R		(1 << 2)	/* Segment is readable */
-+
-+#define PF_PAGEEXEC	(1 << 4)	/* Enable  PAGEEXEC */
-+#define PF_NOPAGEEXEC	(1 << 5)	/* Disable PAGEEXEC */
-+#define PF_SEGMEXEC	(1 << 6)	/* Enable  SEGMEXEC */
-+#define PF_NOSEGMEXEC	(1 << 7)	/* Disable SEGMEXEC */
-+#define PF_MPROTECT	(1 << 8)	/* Enable  MPROTECT */
-+#define PF_NOMPROTECT	(1 << 9)	/* Disable MPROTECT */
-+#define PF_RANDEXEC	(1 << 10)	/* Enable  RANDEXEC */
-+#define PF_NORANDEXEC	(1 << 11)	/* Disable RANDEXEC */
-+#define PF_EMUTRAMP	(1 << 12)	/* Enable  EMUTRAMP */
-+#define PF_NOEMUTRAMP	(1 << 13)	/* Disable EMUTRAMP */
-+#define PF_RANDMMAP	(1 << 14)	/* Enable  RANDMMAP */
-+#define PF_NORANDMMAP	(1 << 15)	/* Disable RANDMMAP */
-+
- /* #define PF_MASKOS	0x0F000000    *//* OS-specific reserved bits */
+@@ -433,6 +434,19 @@
  #define PF_MASKOS	0x0FF00000	/* New value, Oct 4, 1999 Draft */
  #define PF_MASKPROC	0xF0000000	/* Processor-specific reserved bits */
+ 
++#define PF_PAGEEXEC        (1 << 4)    /* Enable  PAGEEXEC */
++#define PF_NOPAGEEXEC  (1 << 5)    /* Disable PAGEEXEC */
++#define PF_SEGMEXEC        (1 << 6)    /* Enable  SEGMEXEC */
++#define PF_NOSEGMEXEC  (1 << 7)    /* Disable SEGMEXEC */
++#define PF_MPROTECT        (1 << 8)    /* Enable  MPROTECT */
++#define PF_NOMPROTECT  (1 << 9)    /* Disable MPROTECT */
++#define PF_RANDEXEC        (1 << 10)   /* Enable  RANDEXEC */
++#define PF_NORANDEXEC  (1 << 11)   /* Disable RANDEXEC */
++#define PF_EMUTRAMP        (1 << 12)   /* Enable  EMUTRAMP */
++#define PF_NOEMUTRAMP  (1 << 13)   /* Disable EMUTRAMP */
++#define PF_RANDMMAP        (1 << 14)   /* Enable  RANDMMAP */
++#define PF_NORANDMMAP  (1 << 15)   /* Disable RANDMMAP */
++
+ /* Values for section header, sh_type field.  */
+ 
+ #define SHT_NULL	0		/* Section header table entry unused */
 --- binutils-2.18.50.0.1/ld/emultempl/elf32.em.orig	2007-09-08 19:34:12.000000000 +0200
 +++ binutils-2.18.50.0.1/ld/emultempl/elf32.em	2007-09-15 21:41:35.688212063 +0200
 @@ -2139,6 +2139,16 @@

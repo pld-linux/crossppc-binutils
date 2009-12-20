@@ -1,6 +1,4 @@
 #
-# Conditional build:
-%bcond_with	gold		# enable gold (gnu ld successor) on supported archs (x86/sparc)
 
 Summary:	Cross PPC GNU binary utility development utilities - binutils
 Summary(es.UTF-8):	Utilitarios para desarrollo de binarios de la GNU - PPC binutils
@@ -9,19 +7,18 @@ Summary(pl.UTF-8):	Skrośne narzędzia programistyczne GNU dla PPC - binutils
 Summary(pt_BR.UTF-8):	Utilitários para desenvolvimento de binários da GNU - PPC binutils
 Summary(tr.UTF-8):	GNU geliştirme araçları - PPC binutils
 Name:		crossppc-binutils
-Version:	2.19.51.0.4
+Version:	2.20.51.0.3
 Release:	1
 License:	GPL v3+
 Group:		Development/Tools
 Source0:	ftp://ftp.kernel.org/pub/linux/devel/binutils/binutils-%{version}.tar.bz2
-# Source0-md5:	7b0d5a4fd434237922aeeab0409f146d
+# Source0-md5:	4d5cdcfa054e697ba92a37f55b125080
 Source1:	http://www.mif.pg.gda.pl/homepages/ankry/man-PLD/binutils-non-english-man-pages.tar.bz2
 # Source1-md5:	a717d9707ec77d82acb6ec9078c472d6
 Patch0:		binutils-gasp.patch
 Patch1:		binutils-info.patch
 Patch2:		binutils-libtool-relink.patch
 Patch3:		binutils-pt_pax_flags.patch
-Patch4:		binutils-mips-relocs.patch
 Patch5:		binutils-flex.patch
 Patch6:		binutils-discarded.patch
 Patch7:		binutils-absolute-gnu_debuglink-path.patch
@@ -29,14 +26,12 @@ Patch8:		binutils-libtool-m.patch
 Patch9:		binutils-build-id.patch
 Patch10:	binutils-tooldir.patch
 URL:		http://sources.redhat.com/binutils/
-BuildRequires:	autoconf >= 2.60
-BuildRequires:	automake >= 1:1.8.2
+BuildRequires:	autoconf >= 2.64
+BuildRequires:	automake >= 1:1.11
 BuildRequires:	bison
 BuildRequires:	flex
 BuildRequires:	gettext-devel
-%if %{with gold}
 BuildRequires:	libstdc++-devel >= 6:4.0-1
-%endif
 BuildRequires:	perl-tools-pod
 %ifarch sparc sparc32
 BuildRequires:	sparc32
@@ -79,7 +74,6 @@ Ten pakiet zawiera wersję skrośną generującą kod dla PPC.
 %patch1 -p1
 %patch2 -p1
 %{?with_pax:%patch3 -p1}
-%patch4 -p0
 %patch5 -p1
 %patch6 -p1
 %patch7 -p1
@@ -98,10 +92,10 @@ rm config/override.m4
 # AM_BINUTILS_WARNINGS in bfd/warning.m4, ZW_GNU_GETTEXT_SISTER_DIR in config/gettext-sister.m4
 for dir in gas bfd; do
 	cd $dir || exit 1
-	aclocal -I .. -I ../config -I ../bfd
-	automake --cygnus Makefile
-	automake --cygnus doc/Makefile
-	autoconf
+	%{__aclocal} -I .. -I ../config -I ../bfd
+	%{__automake} Makefile
+	%{__automake} doc/Makefile
+	%{__autoconf}
 	cd ..
 done
 
@@ -123,7 +117,7 @@ sparc32 \
 	--infodir=%{_infodir} \
 	--mandir=%{_mandir} \
 	--with-tooldir=%{arch} \
-	%{?with_gold:--enable-gold} \
+	--enable-gold=both \
 	--target=%{target}
 
 %{__make}
@@ -134,6 +128,8 @@ install -d $RPM_BUILD_ROOT%{_prefix}
 
 %{__make} install \
 	DESTDIR=$RPM_BUILD_ROOT
+
+rm $RPM_BUILD_ROOT%{_infodir}/standards.info*
 
 # remove these man pages unless we cross-build for win*/netware platforms.
 # however, this should be done in Makefiles.
@@ -149,8 +145,6 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{arch}
 %dir %{arch}/bin
 %attr(755,root,root) %{arch}/bin/*
-%if %{without gold}
 %dir %{arch}/lib
 %{arch}/lib/ldscripts
-%endif
 %{_mandir}/man?/%{target}-*
