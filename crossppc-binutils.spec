@@ -30,7 +30,7 @@ BuildRequires:	autoconf >= 2.64
 BuildRequires:	automake >= 1:1.11
 BuildRequires:	bison
 BuildRequires:	flex
-BuildRequires:	gettext-devel
+BuildRequires:	gettext-tools
 BuildRequires:	libstdc++-devel >= 6:4.0-1
 BuildRequires:	perl-tools-pod
 %ifarch sparc sparc32
